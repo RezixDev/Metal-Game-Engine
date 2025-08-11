@@ -6,13 +6,44 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		AE5492542E48980E00138CF2 /* MetalKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AE5492532E48980E00138CF2 /* MetalKit.framework */; };
+		AE5492602E48C7EA00138CF2 /* AppKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AE54925F2E48C7E900138CF2 /* AppKit.framework */; };
+		AE5492622E48C7F100138CF2 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AE5492612E48C7F100138CF2 /* Metal.framework */; };
+		AE5492642E48C7F800138CF2 /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AE5492632E48C7F800138CF2 /* QuartzCore.framework */; };
+		AE5492662E48C80400138CF2 /* CoreVideo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AE5492652E48C80400138CF2 /* CoreVideo.framework */; };
+		AE5492682E48C80E00138CF2 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AE5492672E48C80E00138CF2 /* Foundation.framework */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		AE3F5EEC2E47FD9F00C16CF3 /* InputSystem.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = InputSystem.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AE5492532E48980E00138CF2 /* MetalKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MetalKit.framework; path = System/Library/Frameworks/MetalKit.framework; sourceTree = SDKROOT; };
+		AE54925F2E48C7E900138CF2 /* AppKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppKit.framework; path = System/Library/Frameworks/AppKit.framework; sourceTree = SDKROOT; };
+		AE5492612E48C7F100138CF2 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		AE5492632E48C7F800138CF2 /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		AE5492652E48C80400138CF2 /* CoreVideo.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreVideo.framework; path = System/Library/Frameworks/CoreVideo.framework; sourceTree = SDKROOT; };
+		AE5492672E48C80E00138CF2 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
+		AE54926A2E48C83800138CF2 /* Exceptions for "InputSystem" folder in "Compile Sources" phase from "InputSystem" target */ = {
+			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
+			buildPhase = AE3F5EE82E47FD9F00C16CF3 /* Sources */;
+			membershipExceptions = (
+				AppDelegate.h,
+				InputManager.h,
+				MyMetalView.h,
+				Renderer.hpp,
+			);
+		};
+/* End PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		AE3F5EEE2E47FD9F00C16CF3 /* InputSystem */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				AE54926A2E48C83800138CF2 /* Exceptions for "InputSystem" folder in "Compile Sources" phase from "InputSystem" target */,
+			);
 			path = InputSystem;
 			sourceTree = "<group>";
 		};
@@ -23,6 +54,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AE5492682E48C80E00138CF2 /* Foundation.framework in Frameworks */,
+				AE5492662E48C80400138CF2 /* CoreVideo.framework in Frameworks */,
+				AE5492642E48C7F800138CF2 /* QuartzCore.framework in Frameworks */,
+				AE5492622E48C7F100138CF2 /* Metal.framework in Frameworks */,
+				AE5492602E48C7EA00138CF2 /* AppKit.framework in Frameworks */,
+				AE5492542E48980E00138CF2 /* MetalKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -33,6 +70,7 @@
 			isa = PBXGroup;
 			children = (
 				AE3F5EEE2E47FD9F00C16CF3 /* InputSystem */,
+				AE5492522E48980E00138CF2 /* Frameworks */,
 				AE3F5EED2E47FD9F00C16CF3 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -43,6 +81,19 @@
 				AE3F5EEC2E47FD9F00C16CF3 /* InputSystem.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		AE5492522E48980E00138CF2 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				AE5492672E48C80E00138CF2 /* Foundation.framework */,
+				AE5492652E48C80400138CF2 /* CoreVideo.framework */,
+				AE5492632E48C7F800138CF2 /* QuartzCore.framework */,
+				AE5492612E48C7F100138CF2 /* Metal.framework */,
+				AE54925F2E48C7E900138CF2 /* AppKit.framework */,
+				AE5492532E48980E00138CF2 /* MetalKit.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -249,6 +300,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/metal-cpp";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSMainStoryboardFile = Main;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;
@@ -274,6 +326,7 @@
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = "$(PROJECT_DIR)/metal-cpp";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				INFOPLIST_KEY_NSMainStoryboardFile = Main;
 				INFOPLIST_KEY_NSPrincipalClass = NSApplication;

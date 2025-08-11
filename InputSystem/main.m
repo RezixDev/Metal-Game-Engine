@@ -1,15 +1,18 @@
-//
-//  main.m
-//  InputSystem
-//
-//  Created by Piotr on 10.08.25.
-//
-
-#import <Cocoa/Cocoa.h>
+//m
+#import <AppKit/AppKit.h>
+#import "AppDelegate.h"
 
 int main(int argc, const char * argv[]) {
     @autoreleasepool {
-        // Setup code that might create autoreleased objects goes here.
+        // Create the application
+        NSApplication *app = [NSApplication sharedApplication];
+        
+        // Create and set the delegate
+        AppDelegate *delegate = [[AppDelegate alloc] init];
+        [app setDelegate:delegate];
+        
+        // Run the application
+        [app run];
     }
-    return NSApplicationMain(argc, argv);
+    return 0;
 }
