@@ -37,7 +37,6 @@
 				Engine/Camera.hpp,
 				GeometryBuilder.hpp,
 				InputManager.h,
-				MathUtilities.hpp,
 				MyMetalView.h,
 				Renderer.hpp,
 			);

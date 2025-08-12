@@ -3,7 +3,6 @@
 //
 #import "Renderer.hpp"
 #import "GeometryBuilder.hpp"
-#import "MathUtilities.hpp"
 #import <simd/simd.h>
 
 // Uniform buffer structure

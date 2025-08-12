@@ -1,5 +1,5 @@
 # Codebase Export for Claude
-Generated on: Mon Aug 11 18:03:25 CEST 2025
+Generated on: Tue Aug 12 21:47:37 CEST 2025
 
 ## Project Structure
 InputSystem/
@@ -11,10 +11,14 @@ InputSystem/
 │   │   ├── AppIcon.appiconset
 │   │   │   └── Contents.json
 │   │   └── Contents.json
-│   ├── Base.lproj
+│   ├── Core
+│   │   ├── Math.hpp
+│   │   └── Transform.hpp
+│   ├── Engine
+│   │   └── Camera.hpp
+│   ├── Graphics
 │   ├── AppDelegate.h
 │   ├── AppDelegate.m
-│   ├── Camera..cpp
 │   ├── Camera.hpp
 │   ├── GeometryBuilder.hpp
 │   ├── InputManager.cpp
@@ -1232,6 +1236,436 @@ public:
 
 
 
+## File: ./Core/Transform.hpp
+// Core/Transform.hpp
+// Transform component for game objects
+#pragma once
+#include "Math.hpp"
+
+namespace Core {
+
+    class Transform {
+    public:
+        Transform()
+            : position_{0, 0, 0}
+            , rotation_(Quaternion::identity())
+            , scale_{1, 1, 1}
+            , isDirty_(true)
+        {}
+
+        // Position
+        void setPosition(const Vec3& position) {
+            position_ = position;
+            isDirty_ = true;
+        }
+
+        void setPosition(float x, float y, float z) {
+            setPosition(Vec3{x, y, z});
+        }
+
+        void translate(const Vec3& delta) {
+            position_ += delta;
+            isDirty_ = true;
+        }
+
+        const Vec3& getPosition() const { return position_; }
+
+        // Rotation
+        void setRotation(const Quat& rotation) {
+            rotation_ = rotation;
+            isDirty_ = true;
+        }
+
+        void setRotationEuler(float pitch, float yaw, float roll) {
+            rotation_ = Quaternion::fromEuler(pitch, yaw, roll);
+            isDirty_ = true;
+        }
+
+        void setRotationEulerDegrees(float pitch, float yaw, float roll) {
+            setRotationEuler(
+                degreesToRadians(pitch),
+                degreesToRadians(yaw),
+                degreesToRadians(roll)
+            );
+        }
+
+        void rotate(const Quat& delta) {
+            rotation_ = Quaternion::multiply(delta, rotation_);
+            isDirty_ = true;
+        }
+
+        void rotateEuler(float pitch, float yaw, float roll) {
+            rotate(Quaternion::fromEuler(pitch, yaw, roll));
+        }
+
+        const Quat& getRotation() const { return rotation_; }
+
+        // Scale
+        void setScale(const Vec3& scale) {
+            scale_ = scale;
+            isDirty_ = true;
+        }
+
+        void setScale(float uniform) {
+            setScale(Vec3{uniform, uniform, uniform});
+        }
+
+        void setScale(float x, float y, float z) {
+            setScale(Vec3{x, y, z});
+        }
+
+        const Vec3& getScale() const { return scale_; }
+
+        // Direction vectors (based on rotation)
+        Vec3 getForward() const {
+            Mat4 rot = Quaternion::toMatrix(rotation_);
+            return Vector::normalize(Vec3{-rot.columns[2].x, -rot.columns[2].y, -rot.columns[2].z});
+        }
+
+        Vec3 getRight() const {
+            Mat4 rot = Quaternion::toMatrix(rotation_);
+            return Vector::normalize(Vec3{rot.columns[0].x, rot.columns[0].y, rot.columns[0].z});
+        }
+
+        Vec3 getUp() const {
+            Mat4 rot = Quaternion::toMatrix(rotation_);
+            return Vector::normalize(Vec3{rot.columns[1].x, rot.columns[1].y, rot.columns[1].z});
+        }
+
+        // Matrix generation
+        Mat4 getMatrix() const {
+            if (isDirty_) {
+                updateMatrix();
+            }
+            return cachedMatrix_;
+        }
+
+        Mat4 getModelMatrix() const {
+            return getMatrix();
+        }
+
+        // Look at target
+        void lookAt(const Vec3& target, const Vec3& up = Vec3{0, 1, 0}) {
+            Vec3 forward = Vector::normalize(target - position_);
+            Vec3 right = Vector::normalize(Vector::cross(forward, up));
+            Vec3 actualUp = Vector::cross(right, forward);
+
+            // Create rotation matrix and convert to quaternion
+            Mat4 rotMatrix = Matrix::identity();
+            rotMatrix.columns[0] = Vec4{right.x, right.y, right.z, 0};
+            rotMatrix.columns[1] = Vec4{actualUp.x, actualUp.y, actualUp.z, 0};
+            rotMatrix.columns[2] = Vec4{-forward.x, -forward.y, -forward.z, 0};
+
+            // Extract quaternion from matrix (simplified for this case)
+            rotation_ = simd_quaternion(rotMatrix);
+            isDirty_ = true;
+        }
+
+        // Hierarchy support (for future scene graph)
+        void setParent(Transform* parent) {
+            parent_ = parent;
+            isDirty_ = true;
+        }
+
+        Transform* getParent() const { return parent_; }
+
+        Mat4 getWorldMatrix() const {
+            if (parent_) {
+                return Matrix::multiply(parent_->getWorldMatrix(), getMatrix());
+            }
+            return getMatrix();
+        }
+
+        Vec3 getWorldPosition() const {
+            if (parent_) {
+                Mat4 worldMat = getWorldMatrix();
+                return Matrix::getTranslation(worldMat);
+            }
+            return position_;
+        }
+
+    private:
+        void updateMatrix() const {
+            Mat4 t = Matrix::translation(position_);
+            Mat4 r = Quaternion::toMatrix(rotation_);
+            Mat4 s = Matrix::scale(scale_);
+
+            cachedMatrix_ = Matrix::multiply(Matrix::multiply(t, r), s);
+            isDirty_ = false;
+        }
+
+        Vec3 position_;
+        Quat rotation_;
+        Vec3 scale_;
+
+        mutable Mat4 cachedMatrix_;
+        mutable bool isDirty_;
+
+        Transform* parent_ = nullptr;
+    };
+
+}
+
+
+## File: ./Core/Math.hpp
+// Core/Math.hpp
+// Consolidated math utilities with clear namespace organization
+#pragma once
+#include <simd/simd.h>
+#include <cmath>
+
+namespace Core {
+    
+    // Type aliases for clarity
+    using Vec2 = vector_float2;
+    using Vec3 = vector_float3;
+    using Vec4 = vector_float4;
+    using Mat4 = matrix_float4x4;
+    using Quat = simd_quatf;
+    
+    // Math constants
+    namespace Constants {
+        constexpr float PI = M_PI;
+        constexpr float TWO_PI = 2.0f * M_PI;
+        constexpr float HALF_PI = M_PI * 0.5f;
+        constexpr float DEG_TO_RAD = M_PI / 180.0f;
+        constexpr float RAD_TO_DEG = 180.0f / M_PI;
+    }
+    
+    // Conversion utilities
+    inline float degreesToRadians(float degrees) {
+        return degrees * Constants::DEG_TO_RAD;
+    }
+    
+    inline float radiansToDegrees(float radians) {
+        return radians * Constants::RAD_TO_DEG;
+    }
+    
+    // Vector operations
+    namespace Vector {
+        inline Vec3 normalize(const Vec3& v) {
+            return simd_normalize(v);
+        }
+        
+        inline Vec3 cross(const Vec3& a, const Vec3& b) {
+            return simd_cross(a, b);
+        }
+        
+        inline float dot(const Vec3& a, const Vec3& b) {
+            return simd_dot(a, b);
+        }
+        
+        inline float length(const Vec3& v) {
+            return simd_length(v);
+        }
+        
+        inline float distance(const Vec3& a, const Vec3& b) {
+            return simd_distance(a, b);
+        }
+        
+        inline Vec3 lerp(const Vec3& a, const Vec3& b, float t) {
+            return simd_mix(a, b, t);
+        }
+    }
+    
+    // Matrix operations
+    namespace Matrix {
+        inline Mat4 identity() {
+            return matrix_identity_float4x4;
+        }
+        
+        inline Mat4 multiply(const Mat4& a, const Mat4& b) {
+            return simd_mul(a, b);
+        }
+        
+        inline Mat4 translation(float x, float y, float z) {
+            return Mat4{{
+                {1, 0, 0, 0},
+                {0, 1, 0, 0},
+                {0, 0, 1, 0},
+                {x, y, z, 1}
+            }};
+        }
+        
+        inline Mat4 translation(const Vec3& t) {
+            return translation(t.x, t.y, t.z);
+        }
+        
+        inline Mat4 scale(float x, float y, float z) {
+            return Mat4{{
+                {x, 0, 0, 0},
+                {0, y, 0, 0},
+                {0, 0, z, 0},
+                {0, 0, 0, 1}
+            }};
+        }
+        
+        inline Mat4 scale(const Vec3& s) {
+            return scale(s.x, s.y, s.z);
+        }
+        
+        inline Mat4 scale(float uniform) {
+            return scale(uniform, uniform, uniform);
+        }
+        
+        inline Mat4 rotationX(float radians) {
+            float c = cosf(radians);
+            float s = sinf(radians);
+            return Mat4{{
+                {1, 0,  0, 0},
+                {0, c, -s, 0},
+                {0, s,  c, 0},
+                {0, 0,  0, 1}
+            }};
+        }
+        
+        inline Mat4 rotationY(float radians) {
+            float c = cosf(radians);
+            float s = sinf(radians);
+            return Mat4{{
+                { c, 0, -s, 0},
+                { 0, 1,  0, 0},
+                { s, 0,  c, 0},
+                { 0, 0,  0, 1}
+            }};
+        }
+        
+        inline Mat4 rotationZ(float radians) {
+            float c = cosf(radians);
+            float s = sinf(radians);
+            return Mat4{{
+                { c, -s, 0, 0},
+                { s,  c, 0, 0},
+                { 0,  0, 1, 0},
+                { 0,  0, 0, 1}
+            }};
+        }
+        
+        inline Mat4 rotation(float x, float y, float z) {
+            return multiply(rotationZ(z), multiply(rotationY(y), rotationX(x)));
+        }
+        
+        inline Mat4 lookAt(const Vec3& eye, const Vec3& center, const Vec3& up) {
+            Vec3 f = Vector::normalize(center - eye);
+            Vec3 r = Vector::normalize(Vector::cross(f, up));
+            Vec3 u = Vector::cross(r, f);
+            
+            return Mat4{{
+                { r.x, u.x, -f.x, 0},
+                { r.y, u.y, -f.y, 0},
+                { r.z, u.z, -f.z, 0},
+                {-Vector::dot(r, eye), -Vector::dot(u, eye), Vector::dot(f, eye), 1}
+            }};
+        }
+        
+        inline Mat4 perspective(float fovYRadians, float aspect, float nearZ, float farZ) {
+            float f = 1.0f / tanf(fovYRadians * 0.5f);
+            float nf = nearZ - farZ;
+            return Mat4{{
+                {f/aspect, 0,            0,               0},
+                {0,        f,            0,               0},
+                {0,        0,   farZ/nf,                -1},
+                {0,        0, (farZ*nearZ)/nf,           0}
+            }};
+        }
+        
+        inline Mat4 orthographic(float left, float right, float bottom, float top,
+                                float nearZ, float farZ) {
+            float rl = right - left;
+            float tb = top - bottom;
+            float fn = farZ - nearZ;
+            
+            return Mat4{{
+                {2.0f/rl,        0,          0,       0},
+                {0,         2.0f/tb,          0,       0},
+                {0,              0,    -2.0f/fn,       0},
+                {-(right+left)/rl, -(top+bottom)/tb, -(farZ+nearZ)/fn, 1}
+            }};
+        }
+        
+        // Extract components
+        inline Vec3 getTranslation(const Mat4& m) {
+            return Vec3{m.columns[3].x, m.columns[3].y, m.columns[3].z};
+        }
+        
+        inline Vec3 getScale(const Mat4& m) {
+            return Vec3{
+                Vector::length(Vec3{m.columns[0].x, m.columns[0].y, m.columns[0].z}),
+                Vector::length(Vec3{m.columns[1].x, m.columns[1].y, m.columns[1].z}),
+                Vector::length(Vec3{m.columns[2].x, m.columns[2].y, m.columns[2].z})
+            };
+        }
+    }
+    
+    // Quaternion operations
+    namespace Quaternion {
+        inline Quat identity() {
+            return simd_quaternion(0.0f, 0.0f, 0.0f, 1.0f);
+        }
+        
+        inline Quat fromAxisAngle(const Vec3& axis, float angle) {
+            float halfAngle = angle * 0.5f;
+            float s = sinf(halfAngle);
+            Vec3 normalizedAxis = Vector::normalize(axis);
+            return simd_quaternion(
+                normalizedAxis.x * s,
+                normalizedAxis.y * s,
+                normalizedAxis.z * s,
+                cosf(halfAngle)
+            );
+        }
+        
+        inline Quat fromEuler(float pitch, float yaw, float roll) {
+            // Convert Euler angles to quaternion
+            float cy = cosf(yaw * 0.5f);
+            float sy = sinf(yaw * 0.5f);
+            float cp = cosf(pitch * 0.5f);
+            float sp = sinf(pitch * 0.5f);
+            float cr = cosf(roll * 0.5f);
+            float sr = sinf(roll * 0.5f);
+
+            return simd_quaternion(
+                sr * cp * cy - cr * sp * sy,
+                cr * sp * cy + sr * cp * sy,
+                cr * cp * sy - sr * sp * cy,
+                cr * cp * cy + sr * sp * sy
+            );
+        }
+        
+        inline Mat4 toMatrix(const Quat& q) {
+            return simd_matrix4x4(q);
+        }
+        
+        inline Quat slerp(const Quat& a, const Quat& b, float t) {
+            return simd_slerp(a, b, t);
+        }
+
+        inline Quat multiply(const Quat& a, const Quat& b) {
+            return simd_mul(a, b);
+        }
+    }
+    
+    // Common math functions
+    namespace Math {
+        template<typename T>
+        inline T clamp(T value, T min, T max) {
+            return value < min ? min : (value > max ? max : value);
+        }
+        
+        template<typename T>
+        inline T lerp(T a, T b, float t) {
+            return a + (b - a) * t;
+        }
+        
+        template<typename T>
+        inline T smoothstep(T edge0, T edge1, T x) {
+            T t = clamp((x - edge0) / (edge1 - edge0), T(0), T(1));
+            return t * t * (T(3) - T(2) * t);
+        }
+    }
+}
+
+
 ## File: ./Renderer.hpp
 #import <Metal/Metal.h>
 #import <QuartzCore/CAMetalLayer.h>
@@ -1246,352 +1680,286 @@ public:
 
 
 ## File: ./MathUtilities.hpp
+// MathUtilities.hpp
+// Updated to use Core::Math while maintaining backward compatibility
 #pragma once
+#include "Core/Math.hpp"
 #include <simd/simd.h>
 #include <cmath>
 
+// Backward compatibility wrapper
 namespace Math {
+    using namespace Core;
+    
     class Matrix4 {
     public:
-        // Corrected perspective matrix (column-major)
-        static matrix_float4x4 perspective(float fovYRadians, float aspect, float near, float far) {
-            float f = 1.0f / tanf(fovYRadians * 0.5f);
-            
-            // Use initializer list syntax
-            return matrix_float4x4{{
-                {f / aspect, 0, 0, 0},
-                {0, f, 0, 0},
-                {0, 0, (far + near) / (near - far), (2 * far * near) / (near - far)},
-                {0, 0, -1, 0}
-            }};
+        static matrix_float4x4 perspective(float fovYRadians, float aspect, float nearZ, float farZ) {
+            return Core::Matrix::perspective(fovYRadians, aspect, nearZ, farZ);
         }
         
-        // Corrected translation matrix (column-major)
         static matrix_float4x4 translation(float x, float y, float z) {
-            return matrix_float4x4{{
-                {1, 0, 0, x},
-                {0, 1, 0, y},
-                {0, 0, 1, z},
-                {0, 0, 0, 1}
-            }};
+            return Core::Matrix::translation(x, y, z);
         }
         
-        // Corrected rotation matrices (column-major)
         static matrix_float4x4 rotationY(float radians) {
-            float c = cosf(radians);
-            float s = sinf(radians);
-            return matrix_float4x4{{
-                {c, 0, -s, 0},
-                {0, 1, 0, 0},
-                {s, 0, c, 0},
-                {0, 0, 0, 1}
-            }};
+            return Core::Matrix::rotationY(radians);
         }
         
         static matrix_float4x4 rotationX(float radians) {
-            float c = cosf(radians);
-            float s = sinf(radians);
-            return matrix_float4x4{{
-                {1, 0, 0, 0},
-                {0, c, s, 0},
-                {0, -s, c, 0},
-                {0, 0, 0, 1}
-            }};
+            return Core::Matrix::rotationX(radians);
         }
         
         static matrix_float4x4 scale(float x, float y, float z) {
-            return matrix_float4x4{{
-                {x, 0, 0, 0},
-                {0, y, 0, 0},
-                {0, 0, z, 0},
-                {0, 0, 0, 1}
-            }};
+            return Core::Matrix::scale(x, y, z);
         }
         
         static matrix_float4x4 multiply(const matrix_float4x4& a, const matrix_float4x4& b) {
-            return simd_mul(a, b);
+            return Core::Matrix::multiply(a, b);
         }
         
         static matrix_float4x4 identity() {
-            return matrix_identity_float4x4;
+            return Core::Matrix::identity();
         }
     };
     
     inline float degreesToRadians(float degrees) {
-        return degrees * (M_PI / 180.0f);
+        return Core::degreesToRadians(degrees);
     }
     
     inline float radiansToDegrees(float radians) {
-        return radians * (180.0f / M_PI);
+        return Core::radiansToDegrees(radians);
     }
 }
 
+
+## File: ./Engine/Camera.hpp
+// Engine/Camera.hpp
+// Improved camera system using Core utilities
+#pragma once
+#include "../Core/Math.hpp"
+#include "../Core/Transform.hpp"
+
+namespace Engine {
+
+    using namespace Core;
+
+    enum class CameraType {
+        Perspective,
+        Orthographic
+    };
+
+    class Camera {
+    public:
+        // Constructor maintains backward compatibility
+        Camera(Vec3 position = Vec3{0, 0, 5},
+               Vec3 target = Vec3{0, 0, 0},
+               Vec3 up = Vec3{0, 1, 0})
+            : transform_()
+            , worldUp_(up)
+            , fov_(60.0f)
+            , nearPlane_(0.01f)
+            , farPlane_(100.0f)
+            , cameraType_(CameraType::Perspective)
+            , movementSpeed_(2.5f)
+            , mouseSensitivity_(0.001f)
+            , yaw_(-90.0f)
+            , pitch_(0.0f)
+        {
+            lookAt(position, target, up);
+        }
+
+        // Matrix getters (backward compatible)
+        Mat4 getViewMatrix() const {
+            Vec3 pos = transform_.getPosition();
+            Vec3 forward = getForward();
+            Vec3 right = getRight();
+            Vec3 up = getUp();
+
+            Mat4 view;
+            view.columns[0] = Vec4{right.x, up.x, -forward.x, 0};
+            view.columns[1] = Vec4{right.y, up.y, -forward.y, 0};
+            view.columns[2] = Vec4{right.z, up.z, -forward.z, 0};
+            view.columns[3] = Vec4{
+                -Vector::dot(right, pos),
+                -Vector::dot(up, pos),
+                Vector::dot(forward, pos),
+                1
+            };
+
+            return view;
+        }
+
+        Mat4 getProjectionMatrix(float aspect, float fovDegrees = -1.0f,
+                                float nearPlane = -1.0f, float farPlane = -1.0f) const {
+            float fov = fovDegrees > 0 ? fovDegrees : fov_;
+            float near = nearPlane > 0 ? nearPlane : nearPlane_;
+            float far = farPlane > 0 ? farPlane : farPlane_;
+
+            if (cameraType_ == CameraType::Perspective) {
+                return Matrix::perspective(degreesToRadians(fov), aspect, near, far);
+            } else {
+                float height = orthoSize_;
+                float width = height * aspect;
+                return Matrix::orthographic(-width/2, width/2, -height/2, height/2, near, far);
+            }
+        }
+
+        Mat4 getViewProjectionMatrix(float aspect, float fovDegrees = -1.0f,
+                                    float nearPlane = -1.0f, float farPlane = -1.0f) const {
+            return Matrix::multiply(
+                getProjectionMatrix(aspect, fovDegrees, nearPlane, farPlane),
+                getViewMatrix()
+            );
+        }
+
+        // Movement (backward compatible)
+        void processMovement(float deltaTime, bool moveForward, bool moveBackward,
+                           bool moveLeft, bool moveRight, bool moveUp = false, bool moveDown = false) {
+            float velocity = movementSpeed_ * deltaTime;
+
+            Vec3 forward = getForward();
+            Vec3 right = getRight();
+            Vec3 movement = Vec3{0, 0, 0};
+
+            if (moveForward) movement += forward * velocity;
+            if (moveBackward) movement -= forward * velocity;
+            if (moveLeft) movement -= right * velocity;
+            if (moveRight) movement += right * velocity;
+            if (moveUp) movement += worldUp_ * velocity;
+            if (moveDown) movement -= worldUp_ * velocity;
+
+            transform_.translate(movement);
+        }
+
+        void processMouseMovement(float deltaX, float deltaY, float sensitivity = -1.0f) {
+            float sens = sensitivity > 0 ? sensitivity : mouseSensitivity_;
+
+            yaw_ += deltaX * sens * Constants::RAD_TO_DEG;
+            pitch_ -= deltaY * sens * Constants::RAD_TO_DEG;
+
+            // Constrain pitch
+            pitch_ = Math::clamp(pitch_, -89.0f, 89.0f);
+
+            updateCameraVectors();
+        }
+
+        // Position and orientation (backward compatible)
+        void setPosition(Vec3 position) {
+            transform_.setPosition(position);
+        }
+
+        void setTarget(Vec3 target) {
+            lookAt(transform_.getPosition(), target, worldUp_);
+        }
+
+        void lookAt(Vec3 position, Vec3 target, Vec3 up) {
+            transform_.setPosition(position);
+            worldUp_ = Vector::normalize(up);
+
+            Vec3 direction = target - position;
+            forward_ = Vector::normalize(direction);
+            right_ = Vector::normalize(Vector::cross(forward_, worldUp_));
+            up_ = Vector::normalize(Vector::cross(right_, forward_));
+
+            // Update yaw and pitch from forward vector
+            yaw_ = radiansToDegrees(atan2f(forward_.z, forward_.x));
+            pitch_ = radiansToDegrees(asinf(forward_.y));
+        }
+
+        // Getters (backward compatible)
+        Vec3 getPosition() const { return transform_.getPosition(); }
+        Vec3 getTarget() const { return transform_.getPosition() + forward_; }
+        Vec3 getForward() const { return forward_; }
+        Vec3 getRight() const { return right_; }
+        Vec3 getUp() const { return up_; }
+
+        // Settings
+        void setMovementSpeed(float speed) { movementSpeed_ = speed; }
+        float getMovementSpeed() const { return movementSpeed_; }
+
+        void setMouseSensitivity(float sensitivity) { mouseSensitivity_ = sensitivity; }
+        float getMouseSensitivity() const { return mouseSensitivity_; }
+
+        void setFieldOfView(float fov) { fov_ = fov; }
+        float getFieldOfView() const { return fov_; }
+
+        void setNearPlane(float near) { nearPlane_ = near; }
+        float getNearPlane() const { return nearPlane_; }
+
+        void setFarPlane(float far) { farPlane_ = far; }
+        float getFarPlane() const { return farPlane_; }
+
+        void setCameraType(CameraType type) { cameraType_ = type; }
+        CameraType getCameraType() const { return cameraType_; }
+
+        void setOrthographicSize(float size) { orthoSize_ = size; }
+        float getOrthographicSize() const { return orthoSize_; }
+
+        // New features
+        void setRotation(float pitch, float yaw, float roll = 0.0f) {
+            pitch_ = pitch;
+            yaw_ = yaw;
+            updateCameraVectors();
+        }
+
+        void zoom(float delta) {
+            if (cameraType_ == CameraType::Perspective) {
+                fov_ = Math::clamp(fov_ - delta, 1.0f, 120.0f);
+            } else {
+                orthoSize_ = Math::clamp(orthoSize_ - delta * 0.1f, 0.1f, 100.0f);
+            }
+        }
+
+    private:
+        void updateCameraVectors() {
+            // Calculate forward from yaw and pitch
+            Vec3 front;
+            front.x = cosf(degreesToRadians(yaw_)) * cosf(degreesToRadians(pitch_));
+            front.y = sinf(degreesToRadians(pitch_));
+            front.z = sinf(degreesToRadians(yaw_)) * cosf(degreesToRadians(pitch_));
+
+            forward_ = Vector::normalize(front);
+            right_ = Vector::normalize(Vector::cross(forward_, worldUp_));
+            up_ = Vector::normalize(Vector::cross(right_, forward_));
+        }
+
+        Transform transform_;
+
+        // Camera vectors
+        Vec3 forward_;
+        Vec3 right_;
+        Vec3 up_;
+        Vec3 worldUp_;
+
+        // Camera settings
+        float fov_;
+        float nearPlane_;
+        float farPlane_;
+        float orthoSize_ = 10.0f;
+        CameraType cameraType_;
+
+        // Movement settings
+        float movementSpeed_;
+        float mouseSensitivity_;
+
+        // Orientation
+        float yaw_;
+        float pitch_;
+    };
+
+}
 
 
 ## File: ./Camera.hpp
-//
 // Camera.hpp
-//
+// Backward compatibility wrapper
 #pragma once
-#include <simd/simd.h>
-#include "MathUtilities.hpp"
 
-class Camera {
-public:
-    // Constructor
-    Camera(vector_float3 position = {0.0f, 0.0f, 5.0f},
-           vector_float3 target = {0.0f, 0.0f, 0.0f},
-           vector_float3 up = {0.0f, 1.0f, 0.0f});
+// Include the new camera implementation
+#include "Engine/Camera.hpp"
 
-    // Matrix getters
-    matrix_float4x4 getViewMatrix() const;
-    matrix_float4x4 getProjectionMatrix(float aspect, float fovDegrees = 60.0f,
-                                      float nearPlane = 0.01f, float farPlane = 100.0f) const;
-    matrix_float4x4 getViewProjectionMatrix(float aspect, float fovDegrees = 60.0f,
-                                          float nearPlane = 0.01f, float farPlane = 100.0f) const;
-
-    // Movement methods
-    void processMovement(float deltaTime, bool moveForward, bool moveBackward,
-                        bool moveLeft, bool moveRight, bool moveUp = false, bool moveDown = false);
-    void processMouseMovement(float deltaX, float deltaY, float sensitivity = 0.001f);
-
-    // Position and orientation control
-    void setPosition(vector_float3 position);
-    void setTarget(vector_float3 target);
-    void setUpVector(vector_float3 up);
-    void lookAt(vector_float3 position, vector_float3 target, vector_float3 up);
-
-    // Getters
-    vector_float3 getPosition() const { return position_; }
-    vector_float3 getTarget() const { return target_; }
-    vector_float3 getForward() const { return forward_; }
-    vector_float3 getRight() const { return right_; }
-    vector_float3 getUp() const { return up_; }
-
-    // Configuration
-    void setMovementSpeed(float speed) { movementSpeed_ = speed; }
-    float getMovementSpeed() const { return movementSpeed_; }
-
-private:
-    // Camera vectors
-    vector_float3 position_;
-    vector_float3 target_;
-    vector_float3 forward_;
-    vector_float3 right_;
-    vector_float3 up_;
-    vector_float3 worldUp_;
-
-    // Camera settings
-    float movementSpeed_;
-    float yaw_;   // Y-axis rotation
-    float pitch_; // X-axis rotation
-
-    // Helper methods
-    void updateCameraVectors();
-    vector_float3 normalize(vector_float3 v) const;
-    vector_float3 cross(vector_float3 a, vector_float3 b) const;
-    float dot(vector_float3 a, vector_float3 b) const;
-};
-
-
-## File: ./Camera..cpp
-//
-// Fixed Camera.cpp
-//
-#include "Camera.hpp"
-#include <cmath>
-
-Camera::Camera(vector_float3 position, vector_float3 target, vector_float3 up)
-    : position_(position)
-    , target_(target)
-    , worldUp_(up)
-    , movementSpeed_(2.5f)
-    , yaw_(-90.0f)
-    , pitch_(0.0f)
-{
-    // Calculate initial camera vectors from position and target
-    vector_float3 direction = {
-        target_.x - position_.x,
-        target_.y - position_.y,
-        target_.z - position_.z
-    };
-    
-    // Normalize the direction to get forward vector
-    forward_ = normalize(direction);
-    
-    // Calculate right and up vectors
-    right_ = normalize(cross(forward_, worldUp_));
-    up_ = normalize(cross(right_, forward_));
-    
-    // Calculate yaw and pitch from the forward vector for consistency
-    // This ensures yaw/pitch match the initial look direction
-    yaw_ = Math::radiansToDegrees(atan2f(forward_.z, forward_.x));
-    pitch_ = Math::radiansToDegrees(asinf(forward_.y));
-    
-
-}
-
-matrix_float4x4 Camera::getViewMatrix() const {
-    vector_float3 f = normalize(forward_);
-    vector_float3 r = normalize(right_);
-    vector_float3 u = normalize(up_);
-    
-    matrix_float4x4 view;
-    view.columns[0] = { r.x, u.x, -f.x, 0.0f };
-    view.columns[1] = { r.y, u.y, -f.y, 0.0f };
-    view.columns[2] = { r.z, u.z, -f.z, 0.0f };
-    view.columns[3] = { -dot(r, position_), -dot(u, position_), dot(f, position_), 1.0f };
-    
-    return view;
-}
-
-
-matrix_float4x4 Camera::getProjectionMatrix(float aspect, float fovDegrees,
-                                          float nearPlane, float farPlane) const {
-    return Math::Matrix4::perspective(Math::degreesToRadians(fovDegrees),
-                                    aspect, nearPlane, farPlane);
-}
-
-matrix_float4x4 Camera::getViewProjectionMatrix(float aspect, float fovDegrees,
-                                              float nearPlane, float farPlane) const {
-    matrix_float4x4 projection = getProjectionMatrix(aspect, fovDegrees, nearPlane, farPlane);
-    matrix_float4x4 view = getViewMatrix();
-    return Math::Matrix4::multiply(projection, view);
-}
-
-void Camera::processMovement(float deltaTime, bool moveForward, bool moveBackward,
-                           bool moveLeft, bool moveRight, bool moveUp, bool moveDown) {
-    float velocity = movementSpeed_ * deltaTime;
-    
-    // Move based on camera's current orientation
-    if (moveForward) {
-        position_.x += forward_.x * velocity;
-        position_.y += forward_.y * velocity;
-        position_.z += forward_.z * velocity;
-    }
-    if (moveBackward) {
-        position_.x -= forward_.x * velocity;
-        position_.y -= forward_.y * velocity;
-        position_.z -= forward_.z * velocity;
-    }
-    if (moveLeft) {
-        position_.x -= right_.x * velocity;
-        position_.y -= right_.y * velocity;
-        position_.z -= right_.z * velocity;
-    }
-    if (moveRight) {
-        position_.x += right_.x * velocity;
-        position_.y += right_.y * velocity;
-        position_.z += right_.z * velocity;
-    }
-    if (moveUp) {
-        position_.x += worldUp_.x * velocity;
-        position_.y += worldUp_.y * velocity;
-        position_.z += worldUp_.z * velocity;
-    }
-    if (moveDown) {
-        position_.x -= worldUp_.x * velocity;
-        position_.y -= worldUp_.y * velocity;
-        position_.z -= worldUp_.z * velocity;
-    }
-}
-
-void Camera::processMouseMovement(float deltaX, float deltaY, float sensitivity) {
-    yaw_ += deltaX * sensitivity * 180.0f / M_PI;
-    pitch_ -= deltaY * sensitivity * 180.0f / M_PI;
-    
-    // Constrain pitch to prevent screen flipping
-    if (pitch_ > 89.0f) pitch_ = 89.0f;
-    if (pitch_ < -89.0f) pitch_ = -89.0f;
-    
-    updateCameraVectors();
-}
-
-void Camera::setPosition(vector_float3 position) {
-    position_ = position;
-}
-
-void Camera::setTarget(vector_float3 target) {
-    target_ = target;
-    
-    // Recalculate forward vector based on new target
-    vector_float3 direction = {
-        target_.x - position_.x,
-        target_.y - position_.y,
-        target_.z - position_.z
-    };
-    forward_ = normalize(direction);
-    
-    // Recalculate right and up vectors
-    right_ = normalize(cross(forward_, worldUp_));
-    up_ = normalize(cross(right_, forward_));
-    
-    // Update yaw and pitch to match the new direction
-    yaw_ = Math::radiansToDegrees(atan2f(forward_.z, forward_.x));
-    pitch_ = Math::radiansToDegrees(asinf(forward_.y));
-}
-
-void Camera::setUpVector(vector_float3 up) {
-    worldUp_ = up;
-    // Recalculate right and up vectors with new world up
-    right_ = normalize(cross(forward_, worldUp_));
-    up_ = normalize(cross(right_, forward_));
-}
-
-void Camera::lookAt(vector_float3 position, vector_float3 target, vector_float3 up) {
-    position_ = position;
-    target_ = target;
-    worldUp_ = up;
-    
-    // Calculate direction from position to target
-    vector_float3 direction = {
-        target_.x - position_.x,
-        target_.y - position_.y,
-        target_.z - position_.z
-    };
-    forward_ = normalize(direction);
-    
-    // Calculate right and up vectors
-    right_ = normalize(cross(forward_, worldUp_));
-    up_ = normalize(cross(right_, forward_));
-    
-    // Update yaw and pitch to match the new direction
-    yaw_ = Math::radiansToDegrees(atan2f(forward_.z, forward_.x));
-    pitch_ = Math::radiansToDegrees(asinf(forward_.y));
-}
-
-void Camera::updateCameraVectors() {
-    // Calculate forward vector from yaw and pitch
-    vector_float3 front;
-    front.x = cosf(Math::degreesToRadians(yaw_)) * cosf(Math::degreesToRadians(pitch_));
-    front.y = sinf(Math::degreesToRadians(pitch_));
-    front.z = sinf(Math::degreesToRadians(yaw_)) * cosf(Math::degreesToRadians(pitch_));
-    forward_ = normalize(front);
-    
-    // Calculate right and up vectors
-    right_ = normalize(cross(forward_, worldUp_));
-    up_ = normalize(cross(right_, forward_));
-}
-
-vector_float3 Camera::normalize(vector_float3 v) const {
-    float length = sqrtf(v.x * v.x + v.y * v.y + v.z * v.z);
-    if (length > 0.0f) {
-        return { v.x / length, v.y / length, v.z / length };
-    }
-    return { 0.0f, 0.0f, 0.0f };
-}
-
-vector_float3 Camera::cross(vector_float3 a, vector_float3 b) const {
-    return {
-        a.y * b.z - a.z * b.y,
-        a.z * b.x - a.x * b.z,
-        a.x * b.y - a.y * b.x
-    };
-}
-
-float Camera::dot(vector_float3 a, vector_float3 b) const {
-    return a.x * b.x + a.y * b.y + a.z * b.z;
-}
+// Type alias for backward compatibility
+using Camera = Engine::Camera;
 
 
 
