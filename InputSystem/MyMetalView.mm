@@ -5,7 +5,7 @@
 #import <QuartzCore/CAMetalLayer.h>
 #import <Metal/Metal.h>
 #import <mach/mach_time.h>
-#import "InputManager.h"
+#import "InputManager.hpp"
 #import "Renderer.hpp"
 #import "Camera.hpp"
 

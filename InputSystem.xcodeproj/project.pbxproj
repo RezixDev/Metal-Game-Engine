@@ -36,7 +36,6 @@
 				Core/Transform.hpp,
 				Engine/Camera.hpp,
 				GeometryBuilder.hpp,
-				InputManager.h,
 				MyMetalView.h,
 				Renderer.hpp,
 			);
