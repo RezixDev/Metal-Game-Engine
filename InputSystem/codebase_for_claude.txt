@@ -1,5 +1,5 @@
 # Codebase Export for Claude
-Generated on: Tue Aug 12 21:47:37 CEST 2025
+Generated on: Wed Aug 13 07:39:54 CEST 2025
 
 ## Project Structure
 InputSystem/
@@ -21,9 +21,7 @@ InputSystem/
 │   ├── AppDelegate.m
 │   ├── Camera.hpp
 │   ├── GeometryBuilder.hpp
-│   ├── InputManager.cpp
-│   ├── InputManager.h
-│   ├── MathUtilities.hpp
+│   ├── InputManager.hpp
 │   ├── MetalCppShim.cpp
 │   ├── MyMetalView.h
 │   ├── MyMetalView.mm
@@ -236,7 +234,7 @@ int main(int argc, const char * argv[]) {
 #import <QuartzCore/CAMetalLayer.h>
 #import <Metal/Metal.h>
 #import <mach/mach_time.h>
-#import "InputManager.h"
+#import "InputManager.hpp"
 #import "Renderer.hpp"
 #import "Camera.hpp"
 
@@ -566,7 +564,6 @@ int main(int argc, const char * argv[]) {
 //
 #import "Renderer.hpp"
 #import "GeometryBuilder.hpp"
-#import "MathUtilities.hpp"
 #import <simd/simd.h>
 
 // Uniform buffer structure
@@ -1237,247 +1234,651 @@ public:
 
 
 ## File: ./Core/Transform.hpp
-// Core/Transform.hpp
-// Transform component for game objects
+// Transform.hpp
+// Enhanced Transform system with better performance and features
 #pragma once
-#include "Math.hpp"
 
-namespace Core {
+#include "Math.hpp"
+#include <vector>      // Added for std::vector
+#include <algorithm>   // Added for std::remove
+
+namespace Engine {
 
     class Transform {
     public:
+        // ========================================
+        // Constructors
+        // ========================================
+
         Transform()
-            : position_{0, 0, 0}
-            , rotation_(Quaternion::identity())
-            , scale_{1, 1, 1}
+            : position_(Math::Vector::Constants::ZERO)
+            , rotation_(Math::Quaternion::identity())
+            , scale_(Math::Vector::Constants::ONE)
             , isDirty_(true)
+            , parent_(nullptr)
         {}
 
-        // Position
-        void setPosition(const Vec3& position) {
+        Transform(const Math::Vec3& position,
+                 const Math::Quat& rotation = Math::Quaternion::identity(),
+                 const Math::Vec3& scale = Math::Vector::Constants::ONE)
+            : position_(position)
+            , rotation_(rotation)
+            , scale_(scale)
+            , isDirty_(true)
+            , parent_(nullptr)
+        {}
+
+        // ========================================
+        // Position Operations
+        // ========================================
+
+        void setPosition(const Math::Vec3& position) {
             position_ = position;
-            isDirty_ = true;
+            markDirty();
         }
 
         void setPosition(float x, float y, float z) {
-            setPosition(Vec3{x, y, z});
+            setPosition(Math::Vector::make(x, y, z));
         }
 
-        void translate(const Vec3& delta) {
+        void translate(const Math::Vec3& delta) {
             position_ += delta;
-            isDirty_ = true;
+            markDirty();
         }
 
-        const Vec3& getPosition() const { return position_; }
+        void translateLocal(const Math::Vec3& localDelta) {
+            translate(Math::Quaternion::rotateVector(rotation_, localDelta));
+        }
 
-        // Rotation
-        void setRotation(const Quat& rotation) {
-            rotation_ = rotation;
-            isDirty_ = true;
+        const Math::Vec3& getPosition() const { return position_; }
+
+        Math::Vec3 getWorldPosition() const {
+            if (parent_) {
+                return Math::Matrix::getTranslation(getWorldMatrix());
+            }
+            return position_;
+        }
+
+        // ========================================
+        // Rotation Operations
+        // ========================================
+
+        void setRotation(const Math::Quat& rotation) {
+            rotation_ = Math::Quaternion::normalize(rotation);
+            markDirty();
         }
 
         void setRotationEuler(float pitch, float yaw, float roll) {
-            rotation_ = Quaternion::fromEuler(pitch, yaw, roll);
-            isDirty_ = true;
+            rotation_ = Math::Quaternion::fromEuler(pitch, yaw, roll);
+            markDirty();
         }
 
         void setRotationEulerDegrees(float pitch, float yaw, float roll) {
             setRotationEuler(
-                degreesToRadians(pitch),
-                degreesToRadians(yaw),
-                degreesToRadians(roll)
+                Math::degreesToRadians(pitch),
+                Math::degreesToRadians(yaw),
+                Math::degreesToRadians(roll)
             );
         }
 
-        void rotate(const Quat& delta) {
-            rotation_ = Quaternion::multiply(delta, rotation_);
-            isDirty_ = true;
+        void rotate(const Math::Quat& deltaRotation) {
+            rotation_ = Math::Quaternion::multiply(deltaRotation, rotation_);
+            rotation_ = Math::Quaternion::normalize(rotation_);
+            markDirty();
         }
 
         void rotateEuler(float pitch, float yaw, float roll) {
-            rotate(Quaternion::fromEuler(pitch, yaw, roll));
+            rotate(Math::Quaternion::fromEuler(pitch, yaw, roll));
         }
 
-        const Quat& getRotation() const { return rotation_; }
+        void rotateEulerDegrees(float pitch, float yaw, float roll) {
+            rotateEuler(
+                Math::degreesToRadians(pitch),
+                Math::degreesToRadians(yaw),
+                Math::degreesToRadians(roll)
+            );
+        }
 
-        // Scale
-        void setScale(const Vec3& scale) {
+        void rotateAroundAxis(const Math::Vec3& axis, float angle) {
+            rotate(Math::Quaternion::fromAxisAngle(axis, angle));
+        }
+
+        const Math::Quat& getRotation() const { return rotation_; }
+
+        Math::Vec3 getEulerAngles() const {
+            return Math::Quaternion::toEuler(rotation_);
+        }
+
+        Math::Vec3 getEulerAnglesDegrees() const {
+            return Math::Quaternion::toEulerDegrees(rotation_);
+        }
+
+        // ========================================
+        // Scale Operations
+        // ========================================
+
+        void setScale(const Math::Vec3& scale) {
             scale_ = scale;
-            isDirty_ = true;
+            markDirty();
         }
 
         void setScale(float uniform) {
-            setScale(Vec3{uniform, uniform, uniform});
+            setScale(Math::Vector::make(uniform, uniform, uniform));
         }
 
         void setScale(float x, float y, float z) {
-            setScale(Vec3{x, y, z});
+            setScale(Math::Vector::make(x, y, z));
         }
 
-        const Vec3& getScale() const { return scale_; }
-
-        // Direction vectors (based on rotation)
-        Vec3 getForward() const {
-            Mat4 rot = Quaternion::toMatrix(rotation_);
-            return Vector::normalize(Vec3{-rot.columns[2].x, -rot.columns[2].y, -rot.columns[2].z});
+        void scale(const Math::Vec3& factor) {
+            scale_ = Math::Vec3{scale_.x * factor.x, scale_.y * factor.y, scale_.z * factor.z};
+            markDirty();
         }
 
-        Vec3 getRight() const {
-            Mat4 rot = Quaternion::toMatrix(rotation_);
-            return Vector::normalize(Vec3{rot.columns[0].x, rot.columns[0].y, rot.columns[0].z});
+        void scale(float uniform) {
+            scale(Math::Vector::make(uniform, uniform, uniform));
         }
 
-        Vec3 getUp() const {
-            Mat4 rot = Quaternion::toMatrix(rotation_);
-            return Vector::normalize(Vec3{rot.columns[1].x, rot.columns[1].y, rot.columns[1].z});
+        const Math::Vec3& getScale() const { return scale_; }
+
+        // ========================================
+        // Direction Vectors
+        // ========================================
+
+        Math::Vec3 getForward() const {
+            return Math::Quaternion::rotateVector(rotation_, Math::Vector::Constants::FORWARD);
         }
 
-        // Matrix generation
-        Mat4 getMatrix() const {
+        Math::Vec3 getRight() const {
+            return Math::Quaternion::rotateVector(rotation_, Math::Vector::Constants::RIGHT);
+        }
+
+        Math::Vec3 getUp() const {
+            return Math::Quaternion::rotateVector(rotation_, Math::Vector::Constants::UP);
+        }
+
+        Math::Vec3 getBack() const {
+            return Math::Quaternion::rotateVector(rotation_, Math::Vector::Constants::BACK);
+        }
+
+        Math::Vec3 getLeft() const {
+            return Math::Quaternion::rotateVector(rotation_, Math::Vector::Constants::LEFT);
+        }
+
+        Math::Vec3 getDown() const {
+            return Math::Quaternion::rotateVector(rotation_, Math::Vector::Constants::DOWN);
+        }
+
+        // ========================================
+        // Matrix Operations
+        // ========================================
+
+        Math::Mat4 getLocalMatrix() const {
             if (isDirty_) {
                 updateMatrix();
             }
             return cachedMatrix_;
         }
 
-        Mat4 getModelMatrix() const {
-            return getMatrix();
+        Math::Mat4 getMatrix() const {
+            return getLocalMatrix();
         }
 
-        // Look at target
-        void lookAt(const Vec3& target, const Vec3& up = Vec3{0, 1, 0}) {
-            Vec3 forward = Vector::normalize(target - position_);
-            Vec3 right = Vector::normalize(Vector::cross(forward, up));
-            Vec3 actualUp = Vector::cross(right, forward);
+        Math::Mat4 getModelMatrix() const {
+            return getLocalMatrix();
+        }
 
-            // Create rotation matrix and convert to quaternion
-            Mat4 rotMatrix = Matrix::identity();
-            rotMatrix.columns[0] = Vec4{right.x, right.y, right.z, 0};
-            rotMatrix.columns[1] = Vec4{actualUp.x, actualUp.y, actualUp.z, 0};
-            rotMatrix.columns[2] = Vec4{-forward.x, -forward.y, -forward.z, 0};
+        Math::Mat4 getWorldMatrix() const {
+            if (parent_) {
+                return Math::Matrix::multiply(parent_->getWorldMatrix(), getLocalMatrix());
+            }
+            return getLocalMatrix();
+        }
 
-            // Extract quaternion from matrix (simplified for this case)
+        Math::Mat4 getInverseMatrix() const {
+            return Math::Matrix::inverse(getLocalMatrix());
+        }
+
+        Math::Mat4 getInverseWorldMatrix() const {
+            return Math::Matrix::inverse(getWorldMatrix());
+        }
+
+        // ========================================
+        // Look At Operations
+        // ========================================
+
+        void lookAt(const Math::Vec3& target, const Math::Vec3& up = Math::Vector::Constants::UP) {
+            Math::Vec3 direction = Math::Vector::normalize(target - position_);
+            lookInDirection(direction, up);
+        }
+
+        void lookInDirection(const Math::Vec3& direction, const Math::Vec3& up = Math::Vector::Constants::UP) {
+            Math::Vec3 forward = Math::Vector::normalize(direction);
+            Math::Vec3 right = Math::Vector::normalize(Math::Vector::cross(forward, up));
+            Math::Vec3 actualUp = Math::Vector::cross(right, forward);
+
+            // Create rotation matrix
+            Math::Mat4 rotMatrix = Math::Matrix::identity();
+            rotMatrix.columns[0] = Math::Vector::make(right, 0.0f);
+            rotMatrix.columns[1] = Math::Vector::make(actualUp, 0.0f);
+            rotMatrix.columns[2] = Math::Vector::make(-forward, 0.0f);
+
+            // Convert to quaternion
             rotation_ = simd_quaternion(rotMatrix);
-            isDirty_ = true;
+            rotation_ = Math::Quaternion::normalize(rotation_);
+            markDirty();
         }
 
-        // Hierarchy support (for future scene graph)
+        // ========================================
+        // Hierarchy Operations
+        // ========================================
+
         void setParent(Transform* parent) {
+            if (parent_ == parent) return;
+
+            if (parent_) {
+                // Remove from old parent's children
+                auto& children = parent_->children_;
+                children.erase(std::remove(children.begin(), children.end(), this), children.end());
+            }
+
             parent_ = parent;
-            isDirty_ = true;
+
+            if (parent_) {
+                // Add to new parent's children
+                parent_->children_.push_back(this);
+            }
+
+            markDirty();
         }
 
         Transform* getParent() const { return parent_; }
 
-        Mat4 getWorldMatrix() const {
-            if (parent_) {
-                return Matrix::multiply(parent_->getWorldMatrix(), getMatrix());
+        const std::vector<Transform*>& getChildren() const { return children_; }
+
+        void addChild(Transform* child) {
+            if (child && child != this) {
+                child->setParent(this);
             }
-            return getMatrix();
         }
 
-        Vec3 getWorldPosition() const {
-            if (parent_) {
-                Mat4 worldMat = getWorldMatrix();
-                return Matrix::getTranslation(worldMat);
+        void removeChild(Transform* child) {
+            if (child) {
+                child->setParent(nullptr);
             }
-            return position_;
+        }
+
+        void removeFromParent() {
+            setParent(nullptr);
+        }
+
+        // ========================================
+        // Utility Operations
+        // ========================================
+
+        void reset() {
+            setPosition(Math::Vector::Constants::ZERO);
+            setRotation(Math::Quaternion::identity());
+            setScale(Math::Vector::Constants::ONE);
+        }
+
+        Transform interpolate(const Transform& other, float t) const {
+            Transform result;
+            result.setPosition(Math::Vector::lerp(position_, other.position_, t));
+            result.setRotation(Math::Quaternion::slerp(rotation_, other.rotation_, t));
+            result.setScale(Math::Vector::lerp(scale_, other.scale_, t));
+            return result;
+        }
+
+        bool isEqual(const Transform& other, float epsilon = Math::Constants::EPSILON) const {
+            return Math::Vector::distance(position_, other.position_) < epsilon &&
+                   Math::Quaternion::dot(rotation_, other.rotation_) > (1.0f - epsilon) &&
+                   Math::Vector::distance(scale_, other.scale_) < epsilon;
+        }
+
+        // ========================================
+        // Coordinate Space Conversions
+        // ========================================
+
+        Math::Vec3 transformPoint(const Math::Vec3& point) const {
+            Math::Mat4 matrix = getLocalMatrix();
+            Math::Vec4 result = Math::Matrix::multiply(matrix, Math::Vector::make(point, 1.0f));
+            return Math::Vec3{result.x, result.y, result.z};
+        }
+
+        Math::Vec3 transformDirection(const Math::Vec3& direction) const {
+            return Math::Quaternion::rotateVector(rotation_, direction);
+        }
+
+        Math::Vec3 inverseTransformPoint(const Math::Vec3& point) const {
+            Math::Mat4 invMatrix = getInverseMatrix();
+            Math::Vec4 result = Math::Matrix::multiply(invMatrix, Math::Vector::make(point, 1.0f));
+            return Math::Vec3{result.x, result.y, result.z};
+        }
+
+        Math::Vec3 inverseTransformDirection(const Math::Vec3& direction) const {
+            return Math::Quaternion::rotateVector(Math::Quaternion::conjugate(rotation_), direction);
+        }
+
+        // ========================================
+        // Debug and Serialization
+        // ========================================
+
+        void debugPrint() const {
+            printf("Transform:\n");
+            printf("  Position: (%.3f, %.3f, %.3f)\n", position_.x, position_.y, position_.z);
+            printf("  Rotation: (%.3f, %.3f, %.3f, %.3f)\n",
+                   rotation_.vector.x, rotation_.vector.y, rotation_.vector.z, rotation_.vector.w);
+            printf("  Scale: (%.3f, %.3f, %.3f)\n", scale_.x, scale_.y, scale_.z);
+
+            Math::Vec3 euler = getEulerAnglesDegrees();
+            printf("  Euler (degrees): (%.3f, %.3f, %.3f)\n", euler.x, euler.y, euler.z);
+        }
+
+        // For serialization (you can extend this based on your needs)
+        struct SerializedData {
+            Math::Vec3 position;
+            Math::Quat rotation;
+            Math::Vec3 scale;
+        };
+
+        SerializedData serialize() const {
+            return {position_, rotation_, scale_};
+        }
+
+        void deserialize(const SerializedData& data) {
+            position_ = data.position;
+            rotation_ = data.rotation;
+            scale_ = data.scale;
+            markDirty();
         }
 
     private:
-        void updateMatrix() const {
-            Mat4 t = Matrix::translation(position_);
-            Mat4 r = Quaternion::toMatrix(rotation_);
-            Mat4 s = Matrix::scale(scale_);
+        // ========================================
+        // Internal State
+        // ========================================
 
-            cachedMatrix_ = Matrix::multiply(Matrix::multiply(t, r), s);
-            isDirty_ = false;
-        }
+        Math::Vec3 position_;
+        Math::Quat rotation_;
+        Math::Vec3 scale_;
 
-        Vec3 position_;
-        Quat rotation_;
-        Vec3 scale_;
-
-        mutable Mat4 cachedMatrix_;
+        mutable Math::Mat4 cachedMatrix_;
         mutable bool isDirty_;
 
-        Transform* parent_ = nullptr;
+        Transform* parent_;
+        std::vector<Transform*> children_;
+
+        // ========================================
+        // Internal Methods
+        // ========================================
+
+        void markDirty() {
+            isDirty_ = true;
+            // Mark all children as dirty too
+            for (Transform* child : children_) {
+                child->markDirty();
+            }
+        }
+
+        void updateMatrix() const {
+            Math::Mat4 t = Math::Matrix::translation(position_);
+            Math::Mat4 r = Math::Quaternion::toMatrix(rotation_);
+            Math::Mat4 s = Math::Matrix::scale(scale_);
+
+            cachedMatrix_ = Math::Matrix::multiply(Math::Matrix::multiply(t, r), s);
+            isDirty_ = false;
+        }
     };
 
+    // ========================================
+    // Transform Utilities
+    // ========================================
+
+    namespace TransformUtils {
+
+        // Create a transform that looks from one point to another
+        inline Transform createLookAt(const Math::Vec3& from, const Math::Vec3& to,
+                                    const Math::Vec3& up = Math::Vector::Constants::UP) {
+            Transform transform;
+            transform.setPosition(from);
+            transform.lookAt(to, up);
+            return transform;
+        }
+
+        // Create a transform from TRS components
+        inline Transform createTRS(const Math::Vec3& translation,
+                                 const Math::Quat& rotation,
+                                 const Math::Vec3& scale) {
+            return Transform(translation, rotation, scale);
+        }
+
+        // Create a transform from Euler angles
+        inline Transform createFromEuler(const Math::Vec3& position,
+                                       const Math::Vec3& eulerAngles,
+                                       const Math::Vec3& scale = Math::Vector::Constants::ONE) {
+            Transform transform;
+            transform.setPosition(position);
+            transform.setRotationEuler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+            transform.setScale(scale);
+            return transform;
+        }
+
+        // Calculate relative transform
+        inline Transform getRelativeTransform(const Transform& from, const Transform& to) {
+            Math::Mat4 fromInverse = from.getInverseWorldMatrix();
+            Math::Mat4 toWorld = to.getWorldMatrix();
+            Math::Mat4 relative = Math::Matrix::multiply(fromInverse, toWorld);
+
+            Transform result;
+            result.setPosition(Math::Matrix::getTranslation(relative));
+            // Note: Extracting rotation and scale from matrix is more complex
+            // This is a simplified version - you might want to implement proper decomposition
+            return result;
+        }
+    }
+
+} // namespace Engine
+
+// ========================================
+// Backward Compatibility
+// ========================================
+
+// For existing code that expects Core::Transform
+namespace Core {
+    using Transform = Engine::Transform;
 }
 
 
+
 ## File: ./Core/Math.hpp
-// Core/Math.hpp
-// Consolidated math utilities with clear namespace organization
+// Math.hpp
+// Unified Math System - Consolidates all math utilities
 #pragma once
+
 #include <simd/simd.h>
 #include <cmath>
 
-namespace Core {
-    
-    // Type aliases for clarity
+namespace Engine {
+namespace Math {
+
+    // ========================================
+    // Type Definitions
+    // ========================================
+
     using Vec2 = vector_float2;
     using Vec3 = vector_float3;
     using Vec4 = vector_float4;
     using Mat4 = matrix_float4x4;
     using Quat = simd_quatf;
-    
-    // Math constants
+
+    // ========================================
+    // Constants
+    // ========================================
+
     namespace Constants {
         constexpr float PI = M_PI;
         constexpr float TWO_PI = 2.0f * M_PI;
         constexpr float HALF_PI = M_PI * 0.5f;
         constexpr float DEG_TO_RAD = M_PI / 180.0f;
         constexpr float RAD_TO_DEG = 180.0f / M_PI;
+        constexpr float EPSILON = 1e-6f;
     }
-    
-    // Conversion utilities
+
+    // ========================================
+    // Utility Functions
+    // ========================================
+
     inline float degreesToRadians(float degrees) {
         return degrees * Constants::DEG_TO_RAD;
     }
-    
+
     inline float radiansToDegrees(float radians) {
         return radians * Constants::RAD_TO_DEG;
     }
-    
-    // Vector operations
+
+    template<typename T>
+    inline T clamp(T value, T min, T max) {
+        return value < min ? min : (value > max ? max : value);
+    }
+
+    template<typename T>
+    inline T lerp(T a, T b, float t) {
+        return a + (b - a) * t;
+    }
+
+    inline bool isEqual(float a, float b, float epsilon = Constants::EPSILON) {
+        return std::abs(a - b) < epsilon;
+    }
+
+    // ========================================
+    // Vector Operations
+    // ========================================
+
     namespace Vector {
+
+        // Vec2 operations
+        inline Vec2 make(float x, float y) {
+            return {x, y};
+        }
+
+        inline float dot(const Vec2& a, const Vec2& b) {
+            return simd_dot(a, b);
+        }
+
+        inline float length(const Vec2& v) {
+            return simd_length(v);
+        }
+
+        inline Vec2 normalize(const Vec2& v) {
+            return simd_normalize(v);
+        }
+
+        // Vec3 operations
+        inline Vec3 make(float x, float y, float z) {
+            return {x, y, z};
+        }
+
         inline Vec3 normalize(const Vec3& v) {
             return simd_normalize(v);
         }
-        
+
         inline Vec3 cross(const Vec3& a, const Vec3& b) {
             return simd_cross(a, b);
         }
-        
+
         inline float dot(const Vec3& a, const Vec3& b) {
             return simd_dot(a, b);
         }
-        
+
         inline float length(const Vec3& v) {
             return simd_length(v);
         }
-        
+
+        inline float lengthSquared(const Vec3& v) {
+            return simd_length_squared(v);
+        }
+
         inline float distance(const Vec3& a, const Vec3& b) {
             return simd_distance(a, b);
         }
-        
+
         inline Vec3 lerp(const Vec3& a, const Vec3& b, float t) {
             return simd_mix(a, b, t);
         }
+
+        inline Vec3 reflect(const Vec3& incident, const Vec3& normal) {
+            return simd_reflect(incident, normal);
+        }
+
+        inline Vec3 refract(const Vec3& incident, const Vec3& normal, float eta) {
+            return simd_refract(incident, normal, eta);
+        }
+
+        // Vec4 operations
+        inline Vec4 make(float x, float y, float z, float w) {
+            return {x, y, z, w};
+        }
+
+        inline Vec4 make(const Vec3& xyz, float w) {
+            return {xyz.x, xyz.y, xyz.z, w};
+        }
+
+        inline float dot(const Vec4& a, const Vec4& b) {
+            return simd_dot(a, b);
+        }
+
+        inline float length(const Vec4& v) {
+            return simd_length(v);
+        }
+
+        inline Vec4 normalize(const Vec4& v) {
+            return simd_normalize(v);
+        }
+
+        // Common vector constants
+        namespace Constants {
+            constexpr Vec3 ZERO = {0.0f, 0.0f, 0.0f};
+            constexpr Vec3 ONE = {1.0f, 1.0f, 1.0f};
+            constexpr Vec3 UP = {0.0f, 1.0f, 0.0f};
+            constexpr Vec3 DOWN = {0.0f, -1.0f, 0.0f};
+            constexpr Vec3 RIGHT = {1.0f, 0.0f, 0.0f};
+            constexpr Vec3 LEFT = {-1.0f, 0.0f, 0.0f};
+            constexpr Vec3 FORWARD = {0.0f, 0.0f, -1.0f};
+            constexpr Vec3 BACK = {0.0f, 0.0f, 1.0f};
+        }
     }
-    
-    // Matrix operations
+
+    // ========================================
+    // Matrix Operations
+    // ========================================
+
     namespace Matrix {
+
         inline Mat4 identity() {
             return matrix_identity_float4x4;
         }
-        
+
         inline Mat4 multiply(const Mat4& a, const Mat4& b) {
             return simd_mul(a, b);
         }
-        
+
+        inline Vec4 multiply(const Mat4& m, const Vec4& v) {
+            return simd_mul(m, v);
+        }
+
+        inline Mat4 transpose(const Mat4& m) {
+            return simd_transpose(m);
+        }
+
+        inline float determinant(const Mat4& m) {
+            return simd_determinant(m);
+        }
+
+        inline Mat4 inverse(const Mat4& m) {
+            return simd_inverse(m);
+        }
+
+        // Transformation matrices
         inline Mat4 translation(float x, float y, float z) {
             return Mat4{{
                 {1, 0, 0, 0},
@@ -1486,11 +1887,11 @@ namespace Core {
                 {x, y, z, 1}
             }};
         }
-        
+
         inline Mat4 translation(const Vec3& t) {
             return translation(t.x, t.y, t.z);
         }
-        
+
         inline Mat4 scale(float x, float y, float z) {
             return Mat4{{
                 {x, 0, 0, 0},
@@ -1499,15 +1900,15 @@ namespace Core {
                 {0, 0, 0, 1}
             }};
         }
-        
+
         inline Mat4 scale(const Vec3& s) {
             return scale(s.x, s.y, s.z);
         }
-        
+
         inline Mat4 scale(float uniform) {
             return scale(uniform, uniform, uniform);
         }
-        
+
         inline Mat4 rotationX(float radians) {
             float c = cosf(radians);
             float s = sinf(radians);
@@ -1518,7 +1919,7 @@ namespace Core {
                 {0, 0,  0, 1}
             }};
         }
-        
+
         inline Mat4 rotationY(float radians) {
             float c = cosf(radians);
             float s = sinf(radians);
@@ -1529,7 +1930,7 @@ namespace Core {
                 { 0, 0,  0, 1}
             }};
         }
-        
+
         inline Mat4 rotationZ(float radians) {
             float c = cosf(radians);
             float s = sinf(radians);
@@ -1540,16 +1941,21 @@ namespace Core {
                 { 0,  0, 0, 1}
             }};
         }
-        
+
         inline Mat4 rotation(float x, float y, float z) {
             return multiply(rotationZ(z), multiply(rotationY(y), rotationX(x)));
         }
-        
+
+        inline Mat4 rotation(const Vec3& euler) {
+            return rotation(euler.x, euler.y, euler.z);
+        }
+
+        // View and projection matrices
         inline Mat4 lookAt(const Vec3& eye, const Vec3& center, const Vec3& up) {
             Vec3 f = Vector::normalize(center - eye);
             Vec3 r = Vector::normalize(Vector::cross(f, up));
             Vec3 u = Vector::cross(r, f);
-            
+
             return Mat4{{
                 { r.x, u.x, -f.x, 0},
                 { r.y, u.y, -f.y, 0},
@@ -1557,7 +1963,7 @@ namespace Core {
                 {-Vector::dot(r, eye), -Vector::dot(u, eye), Vector::dot(f, eye), 1}
             }};
         }
-        
+
         inline Mat4 perspective(float fovYRadians, float aspect, float nearZ, float farZ) {
             float f = 1.0f / tanf(fovYRadians * 0.5f);
             float nf = nearZ - farZ;
@@ -1568,13 +1974,17 @@ namespace Core {
                 {0,        0, (farZ*nearZ)/nf,           0}
             }};
         }
-        
+
+        inline Mat4 perspectiveDegrees(float fovYDegrees, float aspect, float nearZ, float farZ) {
+            return perspective(degreesToRadians(fovYDegrees), aspect, nearZ, farZ);
+        }
+
         inline Mat4 orthographic(float left, float right, float bottom, float top,
                                 float nearZ, float farZ) {
             float rl = right - left;
             float tb = top - bottom;
             float fn = farZ - nearZ;
-            
+
             return Mat4{{
                 {2.0f/rl,        0,          0,       0},
                 {0,         2.0f/tb,          0,       0},
@@ -1582,12 +1992,12 @@ namespace Core {
                 {-(right+left)/rl, -(top+bottom)/tb, -(farZ+nearZ)/fn, 1}
             }};
         }
-        
-        // Extract components
+
+        // Component extraction
         inline Vec3 getTranslation(const Mat4& m) {
             return Vec3{m.columns[3].x, m.columns[3].y, m.columns[3].z};
         }
-        
+
         inline Vec3 getScale(const Mat4& m) {
             return Vec3{
                 Vector::length(Vec3{m.columns[0].x, m.columns[0].y, m.columns[0].z}),
@@ -1595,14 +2005,34 @@ namespace Core {
                 Vector::length(Vec3{m.columns[2].x, m.columns[2].y, m.columns[2].z})
             };
         }
+
+        inline Vec3 getRight(const Mat4& m) {
+            return Vector::normalize(Vec3{m.columns[0].x, m.columns[0].y, m.columns[0].z});
+        }
+
+        inline Vec3 getUp(const Mat4& m) {
+            return Vector::normalize(Vec3{m.columns[1].x, m.columns[1].y, m.columns[1].z});
+        }
+
+        inline Vec3 getForward(const Mat4& m) {
+            return Vector::normalize(Vec3{-m.columns[2].x, -m.columns[2].y, -m.columns[2].z});
+        }
     }
-    
-    // Quaternion operations
+
+    // ========================================
+    // Quaternion Operations
+    // ========================================
+
     namespace Quaternion {
+
         inline Quat identity() {
             return simd_quaternion(0.0f, 0.0f, 0.0f, 1.0f);
         }
-        
+
+        inline Quat make(float x, float y, float z, float w) {
+            return simd_quaternion(x, y, z, w);
+        }
+
         inline Quat fromAxisAngle(const Vec3& axis, float angle) {
             float halfAngle = angle * 0.5f;
             float s = sinf(halfAngle);
@@ -1614,9 +2044,8 @@ namespace Core {
                 cosf(halfAngle)
             );
         }
-        
+
         inline Quat fromEuler(float pitch, float yaw, float roll) {
-            // Convert Euler angles to quaternion
             float cy = cosf(yaw * 0.5f);
             float sy = sinf(yaw * 0.5f);
             float cp = cosf(pitch * 0.5f);
@@ -1631,39 +2060,130 @@ namespace Core {
                 cr * cp * cy + sr * sp * sy
             );
         }
-        
+
+        inline Quat fromEulerDegrees(float pitch, float yaw, float roll) {
+            return fromEuler(
+                degreesToRadians(pitch),
+                degreesToRadians(yaw),
+                degreesToRadians(roll)
+            );
+        }
+
         inline Mat4 toMatrix(const Quat& q) {
             return simd_matrix4x4(q);
-        }
-        
-        inline Quat slerp(const Quat& a, const Quat& b, float t) {
-            return simd_slerp(a, b, t);
         }
 
         inline Quat multiply(const Quat& a, const Quat& b) {
             return simd_mul(a, b);
         }
+
+        inline Quat conjugate(const Quat& q) {
+            return simd_conjugate(q);
+        }
+
+        inline Quat inverse(const Quat& q) {
+            return simd_inverse(q);
+        }
+
+        inline float length(const Quat& q) {
+            return simd_length(q);
+        }
+
+        inline Quat normalize(const Quat& q) {
+            return simd_normalize(q);
+        }
+
+        inline Quat slerp(const Quat& a, const Quat& b, float t) {
+            return simd_slerp(a, b, t);
+        }
+
+        inline float dot(const Quat& a, const Quat& b) {
+            return simd_dot(a, b);
+        }
+
+        inline Vec3 rotateVector(const Quat& q, const Vec3& v) {
+            return simd_act(q, v);
+        }
+
+        // Convert quaternion to Euler angles (in radians)
+        inline Vec3 toEuler(const Quat& q) {
+            Vec3 angles;
+
+            // Roll (x-axis rotation)
+            float sinr_cosp = 2 * (q.vector.w * q.vector.x + q.vector.y * q.vector.z);
+            float cosr_cosp = 1 - 2 * (q.vector.x * q.vector.x + q.vector.y * q.vector.y);
+            angles.x = atan2f(sinr_cosp, cosr_cosp);
+
+            // Pitch (y-axis rotation)
+            float sinp = 2 * (q.vector.w * q.vector.y - q.vector.z * q.vector.x);
+            if (std::abs(sinp) >= 1)
+                angles.y = copysignf(Constants::HALF_PI, sinp); // Use 90 degrees if out of range
+            else
+                angles.y = asinf(sinp);
+
+            // Yaw (z-axis rotation)
+            float siny_cosp = 2 * (q.vector.w * q.vector.z + q.vector.x * q.vector.y);
+            float cosy_cosp = 1 - 2 * (q.vector.y * q.vector.y + q.vector.z * q.vector.z);
+            angles.z = atan2f(siny_cosp, cosy_cosp);
+
+            return angles;
+        }
+
+        inline Vec3 toEulerDegrees(const Quat& q) {
+            Vec3 radians = toEuler(q);
+            return Vec3{
+                radiansToDegrees(radians.x),
+                radiansToDegrees(radians.y),
+                radiansToDegrees(radians.z)
+            };
+        }
     }
-    
-    // Common math functions
-    namespace Math {
-        template<typename T>
-        inline T clamp(T value, T min, T max) {
-            return value < min ? min : (value > max ? max : value);
+
+    // ========================================
+    // Backward Compatibility Wrappers
+    // ========================================
+
+    // For existing code that uses the old Matrix4 class
+    class Matrix4 {
+    public:
+        static Mat4 perspective(float fovYRadians, float aspect, float nearZ, float farZ) {
+            return Matrix::perspective(fovYRadians, aspect, nearZ, farZ);
         }
-        
-        template<typename T>
-        inline T lerp(T a, T b, float t) {
-            return a + (b - a) * t;
+
+        static Mat4 translation(float x, float y, float z) {
+            return Matrix::translation(x, y, z);
         }
-        
-        template<typename T>
-        inline T smoothstep(T edge0, T edge1, T x) {
-            T t = clamp((x - edge0) / (edge1 - edge0), T(0), T(1));
-            return t * t * (T(3) - T(2) * t);
+
+        static Mat4 rotationY(float radians) {
+            return Matrix::rotationY(radians);
         }
-    }
-}
+
+        static Mat4 rotationX(float radians) {
+            return Matrix::rotationX(radians);
+        }
+
+        static Mat4 scale(float x, float y, float z) {
+            return Matrix::scale(x, y, z);
+        }
+
+        static Mat4 multiply(const Mat4& a, const Mat4& b) {
+            return Matrix::multiply(a, b);
+        }
+
+        static Mat4 identity() {
+            return Matrix::identity();
+        }
+    };
+
+} // namespace Math
+} // namespace Engine
+
+// ========================================
+// Global namespace aliases for convenience
+// ========================================
+
+// Alias the Engine::Math namespace to global Math for backward compatibility
+namespace Math = Engine::Math;
 
 
 ## File: ./Renderer.hpp
@@ -1679,275 +2199,1344 @@ namespace Core {
 @end
 
 
-## File: ./MathUtilities.hpp
-// MathUtilities.hpp
-// Updated to use Core::Math while maintaining backward compatibility
+## File: ./InputManager.hpp
+// InputManager.hpp
+// Enhanced Input System with better abstraction and features
 #pragma once
-#include "Core/Math.hpp"
-#include <simd/simd.h>
-#include <cmath>
 
-// Backward compatibility wrapper
-namespace Math {
-    using namespace Core;
+#include <unordered_map>
+#include <unordered_set>
+#include <functional>
+#include <vector>
+#include <string>
+#include <cstdint>
+#include "Math.hpp"
+
+namespace Engine {
+namespace Input {
+
+    // ========================================
+    // Key and Button Definitions
+    // ========================================
     
-    class Matrix4 {
+    using KeyCode = uint16_t;
+    using MouseButton = uint8_t;
+    
+    namespace Keys {
+        // Letters
+        constexpr KeyCode A = 0;
+        constexpr KeyCode B = 11;
+        constexpr KeyCode C = 8;
+        constexpr KeyCode D = 2;
+        constexpr KeyCode E = 14;
+        constexpr KeyCode F = 3;
+        constexpr KeyCode G = 5;
+        constexpr KeyCode H = 4;
+        constexpr KeyCode I = 34;
+        constexpr KeyCode J = 38;
+        constexpr KeyCode K = 40;
+        constexpr KeyCode L = 37;
+        constexpr KeyCode M = 46;
+        constexpr KeyCode N = 45;
+        constexpr KeyCode O = 31;
+        constexpr KeyCode P = 35;
+        constexpr KeyCode Q = 12;
+        constexpr KeyCode R = 15;
+        constexpr KeyCode S = 1;
+        constexpr KeyCode T = 17;
+        constexpr KeyCode U = 32;
+        constexpr KeyCode V = 9;
+        constexpr KeyCode W = 13;
+        constexpr KeyCode X = 7;
+        constexpr KeyCode Y = 16;
+        constexpr KeyCode Z = 6;
+        
+        // Numbers
+        constexpr KeyCode Key0 = 29;
+        constexpr KeyCode Key1 = 18;
+        constexpr KeyCode Key2 = 19;
+        constexpr KeyCode Key3 = 20;
+        constexpr KeyCode Key4 = 21;
+        constexpr KeyCode Key5 = 23;
+        constexpr KeyCode Key6 = 22;
+        constexpr KeyCode Key7 = 26;
+        constexpr KeyCode Key8 = 28;
+        constexpr KeyCode Key9 = 25;
+        
+        // Special keys
+        constexpr KeyCode Space = 49;
+        constexpr KeyCode Return = 36;
+        constexpr KeyCode Escape = 53;
+        constexpr KeyCode Backspace = 51;
+        constexpr KeyCode Tab = 48;
+        constexpr KeyCode LeftShift = 56;
+        constexpr KeyCode RightShift = 60;
+        constexpr KeyCode LeftControl = 59;
+        constexpr KeyCode RightControl = 62;
+        constexpr KeyCode LeftAlt = 58;
+        constexpr KeyCode RightAlt = 61;
+        constexpr KeyCode LeftCommand = 55;
+        constexpr KeyCode RightCommand = 54;
+        
+        // Arrow keys
+        constexpr KeyCode Left = 123;
+        constexpr KeyCode Right = 124;
+        constexpr KeyCode Down = 125;
+        constexpr KeyCode Up = 126;
+        
+        // Function keys
+        constexpr KeyCode F1 = 122;
+        constexpr KeyCode F2 = 120;
+        constexpr KeyCode F3 = 99;
+        constexpr KeyCode F4 = 118;
+        constexpr KeyCode F5 = 96;
+        constexpr KeyCode F6 = 97;
+        constexpr KeyCode F7 = 98;
+        constexpr KeyCode F8 = 100;
+        constexpr KeyCode F9 = 101;
+        constexpr KeyCode F10 = 109;
+        constexpr KeyCode F11 = 103;
+        constexpr KeyCode F12 = 111;
+    }
+    
+    namespace Mouse {
+        constexpr MouseButton Left = 0;
+        constexpr MouseButton Right = 1;
+        constexpr MouseButton Middle = 2;
+        constexpr MouseButton Button4 = 3;
+        constexpr MouseButton Button5 = 4;
+    }
+    
+    // ========================================
+    // Input State Structures
+    // ========================================
+    
+    enum class InputState {
+        Released,
+        Pressed,
+        Held
+    };
+    
+    struct KeyState {
+        InputState state = InputState::Released;
+        float duration = 0.0f;  // How long the key has been in current state
+        bool consumed = false;  // For input handling priority
+    };
+    
+    struct MouseState {
+        Math::Vec2 position = {0, 0};
+        Math::Vec2 deltaPosition = {0, 0};
+        Math::Vec2 scrollDelta = {0, 0};
+        std::unordered_map<MouseButton, KeyState> buttons;
+        bool isOverWindow = true;
+    };
+    
+    // ========================================
+    // Input Events
+    // ========================================
+    
+    enum class EventType {
+        KeyPressed,
+        KeyReleased,
+        MousePressed,
+        MouseReleased,
+        MouseMoved,
+        MouseScrolled,
+        WindowFocused,
+        WindowUnfocused
+    };
+    
+    struct InputEvent {
+        EventType type;
+        union {
+            struct { KeyCode key; } keyboard;
+            struct { MouseButton button; Math::Vec2 position; } mouse;
+            struct { Math::Vec2 position; Math::Vec2 delta; } mouseMoved;
+            struct { Math::Vec2 delta; } mouseScrolled;
+        } data;
+        float timestamp;
+        bool consumed = false;
+    };
+    
+    using InputCallback = std::function<bool(const InputEvent&)>;
+    
+    // ========================================
+    // Input Binding System
+    // ========================================
+    
+    enum class BindingType {
+        Key,
+        MouseButton,
+        MouseAxis,
+        Combination
+    };
+    
+    struct InputBinding {
+        std::string name;
+        BindingType type;
+        union {
+            KeyCode key;
+            MouseButton mouseButton;
+            struct {
+                KeyCode primary;
+                KeyCode modifier;
+            } combination;
+        } input;
+        float sensitivity = 1.0f;
+        bool enabled = true;
+    };
+    
+    // ========================================
+    // Main Input Manager Class
+    // ========================================
+    
+    class InputManager {
     public:
-        static matrix_float4x4 perspective(float fovYRadians, float aspect, float nearZ, float farZ) {
-            return Core::Matrix::perspective(fovYRadians, aspect, nearZ, farZ);
+        static InputManager& getInstance() {
+            static InputManager instance;
+            return instance;
         }
         
-        static matrix_float4x4 translation(float x, float y, float z) {
-            return Core::Matrix::translation(x, y, z);
+        // ========================================
+        // Core Input Processing
+        // ========================================
+        
+        void update(float deltaTime) {
+            deltaTime_ = deltaTime;
+            
+            // Update key durations
+            for (auto& [key, state] : keyStates_) {
+                if (state.state != InputState::Released) {
+                    state.duration += deltaTime;
+                }
+                state.consumed = false; // Reset consumed state each frame
+            }
+            
+            // Update mouse button durations
+            for (auto& [button, state] : mouseState_.buttons) {
+                if (state.state != InputState::Released) {
+                    state.duration += deltaTime;
+                }
+                state.consumed = false;
+            }
+            
+            // Reset mouse delta and scroll
+            mouseState_.deltaPosition = {0, 0};
+            mouseState_.scrollDelta = {0, 0};
+            
+            // Clear events from previous frame
+            events_.clear();
         }
         
-        static matrix_float4x4 rotationY(float radians) {
-            return Core::Matrix::rotationY(radians);
+        // ========================================
+        // Keyboard Input
+        // ========================================
+        
+        void keyDown(KeyCode key) {
+            auto& state = keyStates_[key];
+            if (state.state == InputState::Released) {
+                state.state = InputState::Pressed;
+                state.duration = 0.0f;
+                
+                // Add event
+                InputEvent event;
+                event.type = EventType::KeyPressed;
+                event.data.keyboard.key = key;
+                event.timestamp = getCurrentTime();
+                events_.push_back(event);
+            } else if (state.state == InputState::Pressed) {
+                state.state = InputState::Held;
+            }
         }
         
-        static matrix_float4x4 rotationX(float radians) {
-            return Core::Matrix::rotationX(radians);
+        void keyUp(KeyCode key) {
+            auto& state = keyStates_[key];
+            if (state.state != InputState::Released) {
+                state.state = InputState::Released;
+                state.duration = 0.0f;
+                
+                // Add event
+                InputEvent event;
+                event.type = EventType::KeyReleased;
+                event.data.keyboard.key = key;
+                event.timestamp = getCurrentTime();
+                events_.push_back(event);
+            }
         }
         
-        static matrix_float4x4 scale(float x, float y, float z) {
-            return Core::Matrix::scale(x, y, z);
+        bool isKeyPressed(KeyCode key) const {
+            auto it = keyStates_.find(key);
+            return it != keyStates_.end() && it->second.state == InputState::Pressed && !it->second.consumed;
         }
         
-        static matrix_float4x4 multiply(const matrix_float4x4& a, const matrix_float4x4& b) {
-            return Core::Matrix::multiply(a, b);
+        bool isKeyHeld(KeyCode key) const {
+            auto it = keyStates_.find(key);
+            return it != keyStates_.end() &&
+                   (it->second.state == InputState::Pressed || it->second.state == InputState::Held) &&
+                   !it->second.consumed;
         }
         
-        static matrix_float4x4 identity() {
-            return Core::Matrix::identity();
+        bool isKeyReleased(KeyCode key) const {
+            auto it = keyStates_.find(key);
+            return it != keyStates_.end() && it->second.state == InputState::Released;
+        }
+        
+        float getKeyDuration(KeyCode key) const {
+            auto it = keyStates_.find(key);
+            return it != keyStates_.end() ? it->second.duration : 0.0f;
+        }
+        
+        void consumeKey(KeyCode key) {
+            auto it = keyStates_.find(key);
+            if (it != keyStates_.end()) {
+                it->second.consumed = true;
+            }
+        }
+        
+        // ========================================
+        // Mouse Input
+        // ========================================
+        
+        void mouseDown(MouseButton button, const Math::Vec2& position) {
+            auto& state = mouseState_.buttons[button];
+            if (state.state == InputState::Released) {
+                state.state = InputState::Pressed;
+                state.duration = 0.0f;
+                
+                // Add event
+                InputEvent event;
+                event.type = EventType::MousePressed;
+                event.data.mouse.button = button;
+                event.data.mouse.position = position;
+                event.timestamp = getCurrentTime();
+                events_.push_back(event);
+            } else if (state.state == InputState::Pressed) {
+                state.state = InputState::Held;
+            }
+        }
+        
+        void mouseUp(MouseButton button, const Math::Vec2& position) {
+            auto& state = mouseState_.buttons[button];
+            if (state.state != InputState::Released) {
+                state.state = InputState::Released;
+                state.duration = 0.0f;
+                
+                // Add event
+                InputEvent event;
+                event.type = EventType::MouseReleased;
+                event.data.mouse.button = button;
+                event.data.mouse.position = position;
+                event.timestamp = getCurrentTime();
+                events_.push_back(event);
+            }
+        }
+        
+        void mouseMoved(const Math::Vec2& position) {
+            Math::Vec2 delta = position - mouseState_.position;
+            mouseState_.deltaPosition += delta;
+            mouseState_.position = position;
+            
+            // Add event
+            InputEvent event;
+            event.type = EventType::MouseMoved;
+            event.data.mouseMoved.position = position;
+            event.data.mouseMoved.delta = delta;
+            event.timestamp = getCurrentTime();
+            events_.push_back(event);
+        }
+        
+        void mouseScrolled(const Math::Vec2& delta) {
+            mouseState_.scrollDelta += delta;
+            
+            // Add event
+            InputEvent event;
+            event.type = EventType::MouseScrolled;
+            event.data.mouseScrolled.delta = delta;
+            event.timestamp = getCurrentTime();
+            events_.push_back(event);
+        }
+        
+        bool isMousePressed(MouseButton button) const {
+            auto it = mouseState_.buttons.find(button);
+            return it != mouseState_.buttons.end() && it->second.state == InputState::Pressed && !it->second.consumed;
+        }
+        
+        bool isMouseHeld(MouseButton button) const {
+            auto it = mouseState_.buttons.find(button);
+            return it != mouseState_.buttons.end() &&
+                   (it->second.state == InputState::Pressed || it->second.state == InputState::Held) &&
+                   !it->second.consumed;
+        }
+        
+        bool isMouseReleased(MouseButton button) const {
+            auto it = mouseState_.buttons.find(button);
+            return it != mouseState_.buttons.end() && it->second.state == InputState::Released;
+        }
+        
+        const Math::Vec2& getMousePosition() const { return mouseState_.position; }
+        const Math::Vec2& getMouseDelta() const { return mouseState_.deltaPosition; }
+        const Math::Vec2& getScrollDelta() const { return mouseState_.scrollDelta; }
+        
+        void consumeMouse(MouseButton button) {
+            auto it = mouseState_.buttons.find(button);
+            if (it != mouseState_.buttons.end()) {
+                it->second.consumed = true;
+            }
+        }
+        
+        // ========================================
+        // Input Combinations
+        // ========================================
+        
+        bool isKeyCombo(KeyCode primary, KeyCode modifier) const {
+            return isKeyHeld(modifier) && isKeyPressed(primary);
+        }
+        
+        bool isKeyComboHeld(KeyCode primary, KeyCode modifier) const {
+            return isKeyHeld(modifier) && isKeyHeld(primary);
+        }
+        
+        // ========================================
+        // Input Bindings
+        // ========================================
+        
+        void addBinding(const std::string& name, KeyCode key, float sensitivity = 1.0f) {
+            InputBinding binding;
+            binding.name = name;
+            binding.type = BindingType::Key;
+            binding.input.key = key;
+            binding.sensitivity = sensitivity;
+            bindings_[name] = binding;
+        }
+        
+        void addBinding(const std::string& name, MouseButton button, float sensitivity = 1.0f) {
+            InputBinding binding;
+            binding.name = name;
+            binding.type = BindingType::MouseButton;
+            binding.input.mouseButton = button;
+            binding.sensitivity = sensitivity;
+            bindings_[name] = binding;
+        }
+        
+        void addComboBinding(const std::string& name, KeyCode primary, KeyCode modifier, float sensitivity = 1.0f) {
+            InputBinding binding;
+            binding.name = name;
+            binding.type = BindingType::Combination;
+            binding.input.combination.primary = primary;
+            binding.input.combination.modifier = modifier;
+            binding.sensitivity = sensitivity;
+            bindings_[name] = binding;
+        }
+        
+        void removeBinding(const std::string& name) {
+            bindings_.erase(name);
+        }
+        
+        bool isBindingPressed(const std::string& name) const {
+            auto it = bindings_.find(name);
+            if (it == bindings_.end() || !it->second.enabled) return false;
+            
+            const auto& binding = it->second;
+            switch (binding.type) {
+                case BindingType::Key:
+                    return isKeyPressed(binding.input.key);
+                case BindingType::MouseButton:
+                    return isMousePressed(binding.input.mouseButton);
+                case BindingType::Combination:
+                    return isKeyCombo(binding.input.combination.primary, binding.input.combination.modifier);
+                default:
+                    return false;
+            }
+        }
+        
+        bool isBindingHeld(const std::string& name) const {
+            auto it = bindings_.find(name);
+            if (it == bindings_.end() || !it->second.enabled) return false;
+            
+            const auto& binding = it->second;
+            switch (binding.type) {
+                case BindingType::Key:
+                    return isKeyHeld(binding.input.key);
+                case BindingType::MouseButton:
+                    return isMouseHeld(binding.input.mouseButton);
+                case BindingType::Combination:
+                    return isKeyComboHeld(binding.input.combination.primary, binding.input.combination.modifier);
+                default:
+                    return false;
+            }
+        }
+        
+        float getBindingValue(const std::string& name) const {
+            auto it = bindings_.find(name);
+            if (it == bindings_.end() || !it->second.enabled) return 0.0f;
+            
+            const auto& binding = it->second;
+            float value = 0.0f;
+            
+            switch (binding.type) {
+                case BindingType::Key:
+                    value = isKeyHeld(binding.input.key) ? 1.0f : 0.0f;
+                    break;
+                case BindingType::MouseButton:
+                    value = isMouseHeld(binding.input.mouseButton) ? 1.0f : 0.0f;
+                    break;
+                case BindingType::MouseAxis:
+                    // For mouse axis bindings, return delta
+                    value = mouseState_.deltaPosition.x; // This could be made more sophisticated
+                    break;
+                case BindingType::Combination:
+                    value = isKeyComboHeld(binding.input.combination.primary, binding.input.combination.modifier) ? 1.0f : 0.0f;
+                    break;
+            }
+            
+            return value * binding.sensitivity;
+        }
+        
+        void setBindingEnabled(const std::string& name, bool enabled) {
+            auto it = bindings_.find(name);
+            if (it != bindings_.end()) {
+                it->second.enabled = enabled;
+            }
+        }
+        
+        // ========================================
+        // Event System
+        // ========================================
+        
+        void addEventCallback(const std::string& name, InputCallback callback) {
+            callbacks_[name] = callback;
+        }
+        
+        void removeEventCallback(const std::string& name) {
+            callbacks_.erase(name);
+        }
+        
+        void processEvents() {
+            for (auto& event : events_) {
+                if (event.consumed) continue;
+                
+                // Process callbacks in registration order
+                for (auto& [name, callback] : callbacks_) {
+                    if (callback(event)) {
+                        event.consumed = true;
+                        break; // Event was handled, stop processing
+                    }
+                }
+            }
+        }
+        
+        const std::vector<InputEvent>& getEvents() const { return events_; }
+        
+        // ========================================
+        // Utility Functions
+        // ========================================
+        
+        void setMouseCursorVisible(bool visible) {
+            cursorVisible_ = visible;
+            // Platform-specific cursor visibility code would go here
+        }
+        
+        bool isMouseCursorVisible() const { return cursorVisible_; }
+        
+        void centerMouseCursor() {
+            // Platform-specific cursor centering code would go here
+        }
+        
+        void reset() {
+            keyStates_.clear();
+            mouseState_ = MouseState{};
+            events_.clear();
+        }
+        
+        void debugPrint() const {
+            printf("Input Manager Debug:\n");
+            printf("  Active Keys: %zu\n", keyStates_.size());
+            printf("  Mouse Position: (%.2f, %.2f)\n", mouseState_.position.x, mouseState_.position.y);
+            printf("  Mouse Delta: (%.2f, %.2f)\n", mouseState_.deltaPosition.x, mouseState_.deltaPosition.y);
+            printf("  Active Bindings: %zu\n", bindings_.size());
+            printf("  Event Callbacks: %zu\n", callbacks_.size());
+            printf("  Events This Frame: %zu\n", events_.size());
+        }
+        
+        // ========================================
+        // Common Input Patterns
+        // ========================================
+        
+        struct WASDInput {
+            bool forward = false;
+            bool backward = false;
+            bool left = false;
+            bool right = false;
+            bool up = false;
+            bool down = false;
+        };
+        
+        WASDInput getWASDInput() const {
+            WASDInput input;
+            input.forward = isKeyHeld(Keys::W);
+            input.backward = isKeyHeld(Keys::S);
+            input.left = isKeyHeld(Keys::A);
+            input.right = isKeyHeld(Keys::D);
+            input.up = isKeyHeld(Keys::Space);
+            input.down = isKeyHeld(Keys::Q);
+            return input;
+        }
+        
+        Math::Vec2 getMovementVector() const {
+            Math::Vec2 movement = {0, 0};
+            if (isKeyHeld(Keys::W)) movement.y += 1.0f;
+            if (isKeyHeld(Keys::S)) movement.y -= 1.0f;
+            if (isKeyHeld(Keys::A)) movement.x -= 1.0f;
+            if (isKeyHeld(Keys::D)) movement.x += 1.0f;
+            
+            // Normalize diagonal movement
+            float length = Math::Vector::length(movement);
+            if (length > 1.0f) {
+                movement = Math::Vector::make(movement.x / length, movement.y / length);
+            }
+            
+            return movement;
+        }
+        
+    private:
+        InputManager() = default;
+        
+        std::unordered_map<KeyCode, KeyState> keyStates_;
+        MouseState mouseState_;
+        std::vector<InputEvent> events_;
+        std::unordered_map<std::string, InputBinding> bindings_;
+        std::unordered_map<std::string, InputCallback> callbacks_;
+        
+        float deltaTime_ = 0.0f;
+        bool cursorVisible_ = true;
+        
+        float getCurrentTime() const {
+            // This would typically use a high-precision timer
+            // For now, return a simple incrementing value
+            static float time = 0.0f;
+            time += deltaTime_;
+            return time;
         }
     };
     
-    inline float degreesToRadians(float degrees) {
-        return Core::degreesToRadians(degrees);
+    // ========================================
+    // Convenience Functions
+    // ========================================
+    
+    inline InputManager& Input() {
+        return InputManager::getInstance();
     }
     
-    inline float radiansToDegrees(float radians) {
-        return Core::radiansToDegrees(radians);
+    // Quick access functions for common operations
+    inline bool IsKeyPressed(KeyCode key) { return Input().isKeyPressed(key); }
+    inline bool IsKeyHeld(KeyCode key) { return Input().isKeyHeld(key); }
+    inline bool IsMousePressed(MouseButton button) { return Input().isMousePressed(button); }
+    inline bool IsMouseHeld(MouseButton button) { return Input().isMouseHeld(button); }
+    inline Math::Vec2 GetMousePosition() { return Input().getMousePosition(); }
+    inline Math::Vec2 GetMouseDelta() { return Input().getMouseDelta(); }
+    inline Math::Vec2 GetScrollDelta() { return Input().getScrollDelta(); }
+
+} // namespace Input
+} // namespace Engine
+
+// ========================================
+// Backward Compatibility
+// ========================================
+
+// For existing code that uses the old InputManager interface
+class InputManager {
+public:
+    static InputManager& instance() {
+        static InputManager inst;
+        return inst;
     }
-}
+    
+    void keyDown(uint16_t key) {
+        Engine::Input::Input().keyDown(key);
+    }
+    
+    void keyUp(uint16_t key) {
+        Engine::Input::Input().keyUp(key);
+    }
+    
+    bool down(uint16_t key) const {
+        return Engine::Input::Input().isKeyHeld(key);
+    }
+};
+
 
 
 ## File: ./Engine/Camera.hpp
-// Engine/Camera.hpp
-// Improved camera system using Core utilities
+// Camera.hpp
+// Enhanced Camera system with better architecture and features
 #pragma once
-#include "../Core/Math.hpp"
-#include "../Core/Transform.hpp"
+
+#include "Math.hpp"
+#include "Transform.hpp"
 
 namespace Engine {
-
-    using namespace Core;
 
     enum class CameraType {
         Perspective,
         Orthographic
     };
 
+    enum class CameraMovementType {
+        FPS,        // First-person style (move relative to camera orientation)
+        Orbital,    // Orbit around a target point
+        Free        // Free movement in world space
+    };
+
     class Camera {
     public:
-        // Constructor maintains backward compatibility
-        Camera(Vec3 position = Vec3{0, 0, 5},
-               Vec3 target = Vec3{0, 0, 0},
-               Vec3 up = Vec3{0, 1, 0})
+        // ========================================
+        // Constructors
+        // ========================================
+
+        Camera(Math::Vec3 position = Math::Vector::make(0, 0, 5),
+               Math::Vec3 target = Math::Vector::Constants::ZERO,
+               Math::Vec3 up = Math::Vector::Constants::UP)
             : transform_()
             , worldUp_(up)
+            , target_(target)
+            , cameraType_(CameraType::Perspective)
+            , movementType_(CameraMovementType::FPS)
             , fov_(60.0f)
             , nearPlane_(0.01f)
-            , farPlane_(100.0f)
-            , cameraType_(CameraType::Perspective)
-            , movementSpeed_(2.5f)
-            , mouseSensitivity_(0.001f)
+            , farPlane_(1000.0f)
+            , orthoSize_(10.0f)
+            , movementSpeed_(5.0f)
+            , mouseSensitivity_(0.002f)
+            , zoomSpeed_(2.0f)
             , yaw_(-90.0f)
             , pitch_(0.0f)
+            , orbitDistance_(5.0f)
+            , targetOffset_(Math::Vector::Constants::ZERO)
         {
             lookAt(position, target, up);
         }
 
-        // Matrix getters (backward compatible)
-        Mat4 getViewMatrix() const {
-            Vec3 pos = transform_.getPosition();
-            Vec3 forward = getForward();
-            Vec3 right = getRight();
-            Vec3 up = getUp();
+        // ========================================
+        // View Matrix Generation
+        // ========================================
 
-            Mat4 view;
-            view.columns[0] = Vec4{right.x, up.x, -forward.x, 0};
-            view.columns[1] = Vec4{right.y, up.y, -forward.y, 0};
-            view.columns[2] = Vec4{right.z, up.z, -forward.z, 0};
-            view.columns[3] = Vec4{
-                -Vector::dot(right, pos),
-                -Vector::dot(up, pos),
-                Vector::dot(forward, pos),
-                1
-            };
-
-            return view;
-        }
-
-        Mat4 getProjectionMatrix(float aspect, float fovDegrees = -1.0f,
-                                float nearPlane = -1.0f, float farPlane = -1.0f) const {
-            float fov = fovDegrees > 0 ? fovDegrees : fov_;
-            float near = nearPlane > 0 ? nearPlane : nearPlane_;
-            float far = farPlane > 0 ? farPlane : farPlane_;
-
-            if (cameraType_ == CameraType::Perspective) {
-                return Matrix::perspective(degreesToRadians(fov), aspect, near, far);
+        Math::Mat4 getViewMatrix() const {
+            if (movementType_ == CameraMovementType::Orbital) {
+                return Math::Matrix::lookAt(getOrbitPosition(), target_ + targetOffset_, worldUp_);
             } else {
-                float height = orthoSize_;
-                float width = height * aspect;
-                return Matrix::orthographic(-width/2, width/2, -height/2, height/2, near, far);
+                Math::Vec3 pos = transform_.getPosition();
+                Math::Vec3 forward = transform_.getForward();
+                return Math::Matrix::lookAt(pos, pos + forward, worldUp_);
             }
         }
 
-        Mat4 getViewProjectionMatrix(float aspect, float fovDegrees = -1.0f,
-                                    float nearPlane = -1.0f, float farPlane = -1.0f) const {
-            return Matrix::multiply(
-                getProjectionMatrix(aspect, fovDegrees, nearPlane, farPlane),
+        // ========================================
+        // Projection Matrix Generation
+        // ========================================
+
+        Math::Mat4 getProjectionMatrix(float aspect,
+                                     float customFov = -1.0f,
+                                     float customNear = -1.0f,
+                                     float customFar = -1.0f) const {
+            float fov = customFov > 0 ? customFov : fov_;
+            float near = customNear > 0 ? customNear : nearPlane_;
+            float far = customFar > 0 ? customFar : farPlane_;
+
+            if (cameraType_ == CameraType::Perspective) {
+                return Math::Matrix::perspectiveDegrees(fov, aspect, near, far);
+            } else {
+                float height = orthoSize_;
+                float width = height * aspect;
+                return Math::Matrix::orthographic(-width/2, width/2, -height/2, height/2, near, far);
+            }
+        }
+
+        Math::Mat4 getViewProjectionMatrix(float aspect,
+                                         float customFov = -1.0f,
+                                         float customNear = -1.0f,
+                                         float customFar = -1.0f) const {
+            return Math::Matrix::multiply(
+                getProjectionMatrix(aspect, customFov, customNear, customFar),
                 getViewMatrix()
             );
         }
 
-        // Movement (backward compatible)
-        void processMovement(float deltaTime, bool moveForward, bool moveBackward,
-                           bool moveLeft, bool moveRight, bool moveUp = false, bool moveDown = false) {
+        // ========================================
+        // Movement System
+        // ========================================
+
+        void processMovement(float deltaTime,
+                           bool moveForward, bool moveBackward,
+                           bool moveLeft, bool moveRight,
+                           bool moveUp = false, bool moveDown = false) {
+
             float velocity = movementSpeed_ * deltaTime;
 
-            Vec3 forward = getForward();
-            Vec3 right = getRight();
-            Vec3 movement = Vec3{0, 0, 0};
+            switch (movementType_) {
+                case CameraMovementType::FPS:
+                    processFPSMovement(velocity, moveForward, moveBackward, moveLeft, moveRight, moveUp, moveDown);
+                    break;
 
-            if (moveForward) movement += forward * velocity;
-            if (moveBackward) movement -= forward * velocity;
-            if (moveLeft) movement -= right * velocity;
-            if (moveRight) movement += right * velocity;
-            if (moveUp) movement += worldUp_ * velocity;
-            if (moveDown) movement -= worldUp_ * velocity;
+                case CameraMovementType::Orbital:
+                    processOrbitalMovement(velocity, moveForward, moveBackward, moveLeft, moveRight, moveUp, moveDown);
+                    break;
+
+                case CameraMovementType::Free:
+                    processFreeMovement(velocity, moveForward, moveBackward, moveLeft, moveRight, moveUp, moveDown);
+                    break;
+            }
+        }
+
+        void processMouseMovement(float deltaX, float deltaY, float customSensitivity = -1.0f) {
+            float sensitivity = customSensitivity > 0 ? customSensitivity : mouseSensitivity_;
+
+            switch (movementType_) {
+                case CameraMovementType::FPS:
+                case CameraMovementType::Free:
+                    processFPSMouseMovement(deltaX, deltaY, sensitivity);
+                    break;
+
+                case CameraMovementType::Orbital:
+                    processOrbitalMouseMovement(deltaX, deltaY, sensitivity);
+                    break;
+            }
+        }
+
+        void processZoom(float delta) {
+            if (cameraType_ == CameraType::Perspective) {
+                if (movementType_ == CameraMovementType::Orbital) {
+                    orbitDistance_ = Math::clamp(orbitDistance_ - delta * zoomSpeed_, 0.5f, 100.0f);
+                    updateOrbitPosition();
+                } else {
+                    fov_ = Math::clamp(fov_ - delta * zoomSpeed_, 1.0f, 120.0f);
+                }
+            } else {
+                orthoSize_ = Math::clamp(orthoSize_ - delta * zoomSpeed_ * 0.1f, 0.1f, 100.0f);
+            }
+        }
+
+        // ========================================
+        // Position and Orientation
+        // ========================================
+
+        void setPosition(const Math::Vec3& position) {
+            if (movementType_ == CameraMovementType::Orbital) {
+                // For orbital camera, set the target and maintain distance
+                setTarget(position);
+            } else {
+                transform_.setPosition(position);
+            }
+        }
+
+        Math::Vec3 getPosition() const {
+            if (movementType_ == CameraMovementType::Orbital) {
+                return getOrbitPosition();
+            } else {
+                return transform_.getPosition();
+            }
+        }
+
+        void setTarget(const Math::Vec3& target) {
+            target_ = target;
+            if (movementType_ == CameraMovementType::Orbital) {
+                updateOrbitPosition();
+            } else {
+                lookAt(transform_.getPosition(), target, worldUp_);
+            }
+        }
+
+        Math::Vec3 getTarget() const {
+            if (movementType_ == CameraMovementType::Orbital) {
+                return target_ + targetOffset_;
+            } else {
+                return transform_.getPosition() + transform_.getForward();
+            }
+        }
+
+        void lookAt(const Math::Vec3& position, const Math::Vec3& target, const Math::Vec3& up) {
+            transform_.setPosition(position);
+            transform_.lookAt(target, up);
+            worldUp_ = Math::Vector::normalize(up);
+            target_ = target;
+
+            // Update yaw and pitch from transform
+            Math::Vec3 forward = transform_.getForward();
+            yaw_ = Math::radiansToDegrees(atan2f(forward.z, forward.x));
+            pitch_ = Math::radiansToDegrees(asinf(-forward.y));
+
+            if (movementType_ == CameraMovementType::Orbital) {
+                orbitDistance_ = Math::Vector::distance(position, target);
+                updateOrbitPosition();
+            }
+        }
+
+        // ========================================
+        // Direction Vectors
+        // ========================================
+
+        Math::Vec3 getForward() const {
+            if (movementType_ == CameraMovementType::Orbital) {
+                return Math::Vector::normalize(target_ + targetOffset_ - getOrbitPosition());
+            } else {
+                return transform_.getForward();
+            }
+        }
+
+        Math::Vec3 getRight() const {
+            return transform_.getRight();
+        }
+
+        Math::Vec3 getUp() const {
+            return transform_.getUp();
+        }
+
+        // ========================================
+        // Camera Settings
+        // ========================================
+
+        void setCameraType(CameraType type) { cameraType_ = type; }
+        CameraType getCameraType() const { return cameraType_; }
+
+        void setMovementType(CameraMovementType type) {
+            movementType_ = type;
+            if (type == CameraMovementType::Orbital) {
+                updateOrbitPosition();
+            }
+        }
+        CameraMovementType getMovementType() const { return movementType_; }
+
+        void setFieldOfView(float fov) { fov_ = Math::clamp(fov, 1.0f, 179.0f); }
+        float getFieldOfView() const { return fov_; }
+
+        void setNearPlane(float near) { nearPlane_ = Math::clamp(near, 0.001f, farPlane_ - 0.001f); }
+        float getNearPlane() const { return nearPlane_; }
+
+        void setFarPlane(float far) { farPlane_ = Math::clamp(far, nearPlane_ + 0.001f, 10000.0f); }
+        float getFarPlane() const { return farPlane_; }
+
+        void setOrthographicSize(float size) { orthoSize_ = Math::clamp(size, 0.1f, 1000.0f); }
+        float getOrthographicSize() const { return orthoSize_; }
+
+        void setMovementSpeed(float speed) { movementSpeed_ = Math::clamp(speed, 0.1f, 100.0f); }
+        float getMovementSpeed() const { return movementSpeed_; }
+
+        void setMouseSensitivity(float sensitivity) { mouseSensitivity_ = Math::clamp(sensitivity, 0.0001f, 0.1f); }
+        float getMouseSensitivity() const { return mouseSensitivity_; }
+
+        void setZoomSpeed(float speed) { zoomSpeed_ = Math::clamp(speed, 0.1f, 10.0f); }
+        float getZoomSpeed() const { return zoomSpeed_; }
+
+        // ========================================
+        // Orbital Camera Settings
+        // ========================================
+
+        void setOrbitDistance(float distance) {
+            orbitDistance_ = Math::clamp(distance, 0.1f, 1000.0f);
+            if (movementType_ == CameraMovementType::Orbital) {
+                updateOrbitPosition();
+            }
+        }
+        float getOrbitDistance() const { return orbitDistance_; }
+
+        void setTargetOffset(const Math::Vec3& offset) {
+            targetOffset_ = offset;
+            if (movementType_ == CameraMovementType::Orbital) {
+                updateOrbitPosition();
+            }
+        }
+        const Math::Vec3& getTargetOffset() const { return targetOffset_; }
+
+        // ========================================
+        // Ray Casting
+        // ========================================
+
+        struct Ray {
+            Math::Vec3 origin;
+            Math::Vec3 direction;
+        };
+
+        Ray screenPointToRay(const Math::Vec2& screenPoint, const Math::Vec2& screenSize) const {
+            // Convert screen coordinates to normalized device coordinates
+            float x = (2.0f * screenPoint.x) / screenSize.x - 1.0f;
+            float y = 1.0f - (2.0f * screenPoint.y) / screenSize.y;
+
+            // Create ray in clip space
+            Math::Vec4 rayClip = Math::Vector::make(x, y, -1.0f, 1.0f);
+
+            // Transform to eye space
+            float aspect = screenSize.x / screenSize.y;
+            Math::Mat4 projInverse = Math::Matrix::inverse(getProjectionMatrix(aspect));
+            Math::Vec4 rayEye = Math::Matrix::multiply(projInverse, rayClip);
+            rayEye.z = -1.0f;
+            rayEye.w = 0.0f;
+
+            // Transform to world space
+            Math::Mat4 viewInverse = Math::Matrix::inverse(getViewMatrix());
+            Math::Vec4 rayWorld = Math::Matrix::multiply(viewInverse, rayEye);
+
+            Ray ray;
+            ray.origin = getPosition();
+            ray.direction = Math::Vector::normalize(Math::Vec3{rayWorld.x, rayWorld.y, rayWorld.z});
+
+            return ray;
+        }
+
+        // ========================================
+        // Frustum Information
+        // ========================================
+
+        struct FrustumCorners {
+            Math::Vec3 nearTopLeft, nearTopRight, nearBottomLeft, nearBottomRight;
+            Math::Vec3 farTopLeft, farTopRight, farBottomLeft, farBottomRight;
+        };
+
+        FrustumCorners getFrustumCorners(float aspect) const {
+            FrustumCorners corners;
+
+            Math::Mat4 viewProj = getViewProjectionMatrix(aspect);
+            Math::Mat4 invViewProj = Math::Matrix::inverse(viewProj);
+
+            // NDC coordinates for frustum corners
+            Math::Vec4 ndcCorners[8] = {
+                {-1, -1, -1, 1}, {1, -1, -1, 1}, {1, 1, -1, 1}, {-1, 1, -1, 1},  // Near
+                {-1, -1,  1, 1}, {1, -1,  1, 1}, {1, 1,  1, 1}, {-1, 1,  1, 1}   // Far
+            };
+
+            // Transform to world space
+            Math::Vec3 worldCorners[8];
+            for (int i = 0; i < 8; i++) {
+                Math::Vec4 worldPos = Math::Matrix::multiply(invViewProj, ndcCorners[i]);
+                worldPos /= worldPos.w;  // Perspective divide
+                worldCorners[i] = Math::Vec3{worldPos.x, worldPos.y, worldPos.z};
+            }
+
+            corners.nearBottomLeft = worldCorners[0];
+            corners.nearBottomRight = worldCorners[1];
+            corners.nearTopRight = worldCorners[2];
+            corners.nearTopLeft = worldCorners[3];
+            corners.farBottomLeft = worldCorners[4];
+            corners.farBottomRight = worldCorners[5];
+            corners.farTopRight = worldCorners[6];
+            corners.farTopLeft = worldCorners[7];
+
+            return corners;
+        }
+
+        // ========================================
+        // Animation and Interpolation
+        // ========================================
+
+        void animateToPosition(const Math::Vec3& targetPosition, float duration) {
+            // This would typically be handled by an animation system
+            // For now, just set the position directly
+            setPosition(targetPosition);
+        }
+
+        void animateToTarget(const Math::Vec3& newTarget, float duration) {
+            setTarget(newTarget);
+        }
+
+        // ========================================
+        // Debug and Utilities
+        // ========================================
+
+        void debugPrint() const {
+            printf("Camera Debug Info:\n");
+            printf("  Position: (%.3f, %.3f, %.3f)\n", getPosition().x, getPosition().y, getPosition().z);
+            printf("  Target: (%.3f, %.3f, %.3f)\n", getTarget().x, getTarget().y, getTarget().z);
+            printf("  Forward: (%.3f, %.3f, %.3f)\n", getForward().x, getForward().y, getForward().z);
+            printf("  Type: %s\n", (cameraType_ == CameraType::Perspective) ? "Perspective" : "Orthographic");
+            printf("  Movement: %s\n", getMovementTypeString());
+            printf("  FOV: %.1f°\n", fov_);
+            printf("  Near/Far: %.3f / %.3f\n", nearPlane_, farPlane_);
+            if (movementType_ == CameraMovementType::Orbital) {
+                printf("  Orbit Distance: %.3f\n", orbitDistance_);
+            }
+        }
+
+    private:
+        // ========================================
+        // Internal State
+        // ========================================
+
+        Engine::Transform transform_;
+        Math::Vec3 worldUp_;
+        Math::Vec3 target_;
+        Math::Vec3 targetOffset_;
+
+        CameraType cameraType_;
+        CameraMovementType movementType_;
+
+        // Projection parameters
+        float fov_;
+        float nearPlane_;
+        float farPlane_;
+        float orthoSize_;
+
+        // Movement parameters
+        float movementSpeed_;
+        float mouseSensitivity_;
+        float zoomSpeed_;
+
+        // Orientation (for FPS-style movement)
+        float yaw_;
+        float pitch_;
+
+        // Orbital camera parameters
+        float orbitDistance_;
+
+        // ========================================
+        // Internal Methods
+        // ========================================
+
+        void processFPSMovement(float velocity, bool forward, bool backward,
+                              bool left, bool right, bool up, bool down) {
+            Math::Vec3 movement = Math::Vector::Constants::ZERO;
+
+            if (forward) movement += transform_.getForward() * velocity;
+            if (backward) movement -= transform_.getForward() * velocity;
+            if (left) movement -= transform_.getRight() * velocity;
+            if (right) movement += transform_.getRight() * velocity;
+            if (up) movement += worldUp_ * velocity;
+            if (down) movement -= worldUp_ * velocity;
 
             transform_.translate(movement);
         }
 
-        void processMouseMovement(float deltaX, float deltaY, float sensitivity = -1.0f) {
-            float sens = sensitivity > 0 ? sensitivity : mouseSensitivity_;
+        void processOrbitalMovement(float velocity, bool forward, bool backward,
+                                  bool left, bool right, bool up, bool down) {
+            if (forward) orbitDistance_ = Math::clamp(orbitDistance_ - velocity, 0.1f, 1000.0f);
+            if (backward) orbitDistance_ = Math::clamp(orbitDistance_ + velocity, 0.1f, 1000.0f);
 
-            yaw_ += deltaX * sens * Constants::RAD_TO_DEG;
-            pitch_ -= deltaY * sens * Constants::RAD_TO_DEG;
+            Math::Vec3 movement = Math::Vector::Constants::ZERO;
+            if (left) movement -= transform_.getRight() * velocity;
+            if (right) movement += transform_.getRight() * velocity;
+            if (up) movement += worldUp_ * velocity;
+            if (down) movement -= worldUp_ * velocity;
 
-            // Constrain pitch
+            target_ += movement;
+            updateOrbitPosition();
+        }
+
+        void processFreeMovement(float velocity, bool forward, bool backward,
+                               bool left, bool right, bool up, bool down) {
+            Math::Vec3 movement = Math::Vector::Constants::ZERO;
+
+            if (forward) movement += Math::Vector::Constants::FORWARD * velocity;
+            if (backward) movement += Math::Vector::Constants::BACK * velocity;
+            if (left) movement += Math::Vector::Constants::LEFT * velocity;
+            if (right) movement += Math::Vector::Constants::RIGHT * velocity;
+            if (up) movement += Math::Vector::Constants::UP * velocity;
+            if (down) movement += Math::Vector::Constants::DOWN * velocity;
+
+            transform_.translate(movement);
+        }
+
+        void processFPSMouseMovement(float deltaX, float deltaY, float sensitivity) {
+            yaw_ += deltaX * sensitivity * Math::Constants::RAD_TO_DEG;
+            pitch_ -= deltaY * sensitivity * Math::Constants::RAD_TO_DEG;
+
             pitch_ = Math::clamp(pitch_, -89.0f, 89.0f);
 
             updateCameraVectors();
         }
 
-        // Position and orientation (backward compatible)
-        void setPosition(Vec3 position) {
-            transform_.setPosition(position);
+        void processOrbitalMouseMovement(float deltaX, float deltaY, float sensitivity) {
+            yaw_ += deltaX * sensitivity * Math::Constants::RAD_TO_DEG;
+            pitch_ -= deltaY * sensitivity * Math::Constants::RAD_TO_DEG;
+
+            pitch_ = Math::clamp(pitch_, -89.0f, 89.0f);
+
+            updateOrbitPosition();
         }
 
-        void setTarget(Vec3 target) {
-            lookAt(transform_.getPosition(), target, worldUp_);
+        void updateCameraVectors() {
+            // Calculate forward direction from yaw and pitch
+            Math::Vec3 front;
+            front.x = cosf(Math::degreesToRadians(yaw_)) * cosf(Math::degreesToRadians(pitch_));
+            front.y = sinf(Math::degreesToRadians(pitch_));
+            front.z = sinf(Math::degreesToRadians(yaw_)) * cosf(Math::degreesToRadians(pitch_));
+
+            // Update transform orientation
+            transform_.lookInDirection(Math::Vector::normalize(front), worldUp_);
         }
 
-        void lookAt(Vec3 position, Vec3 target, Vec3 up) {
-            transform_.setPosition(position);
-            worldUp_ = Vector::normalize(up);
+        void updateOrbitPosition() {
+            // Calculate position based on spherical coordinates
+            float yawRad = Math::degreesToRadians(yaw_);
+            float pitchRad = Math::degreesToRadians(pitch_);
 
-            Vec3 direction = target - position;
-            forward_ = Vector::normalize(direction);
-            right_ = Vector::normalize(Vector::cross(forward_, worldUp_));
-            up_ = Vector::normalize(Vector::cross(right_, forward_));
+            Math::Vec3 offset;
+            offset.x = orbitDistance_ * cosf(pitchRad) * cosf(yawRad);
+            offset.y = orbitDistance_ * sinf(pitchRad);
+            offset.z = orbitDistance_ * cosf(pitchRad) * sinf(yawRad);
 
-            // Update yaw and pitch from forward vector
-            yaw_ = radiansToDegrees(atan2f(forward_.z, forward_.x));
-            pitch_ = radiansToDegrees(asinf(forward_.y));
+            Math::Vec3 newPosition = target_ + targetOffset_ + offset;
+            transform_.setPosition(newPosition);
+            transform_.lookAt(target_ + targetOffset_, worldUp_);
         }
 
-        // Getters (backward compatible)
-        Vec3 getPosition() const { return transform_.getPosition(); }
-        Vec3 getTarget() const { return transform_.getPosition() + forward_; }
-        Vec3 getForward() const { return forward_; }
-        Vec3 getRight() const { return right_; }
-        Vec3 getUp() const { return up_; }
+        Math::Vec3 getOrbitPosition() const {
+            float yawRad = Math::degreesToRadians(yaw_);
+            float pitchRad = Math::degreesToRadians(pitch_);
 
-        // Settings
-        void setMovementSpeed(float speed) { movementSpeed_ = speed; }
-        float getMovementSpeed() const { return movementSpeed_; }
+            Math::Vec3 offset;
+            offset.x = orbitDistance_ * cosf(pitchRad) * cosf(yawRad);
+            offset.y = orbitDistance_ * sinf(pitchRad);
+            offset.z = orbitDistance_ * cosf(pitchRad) * sinf(yawRad);
 
-        void setMouseSensitivity(float sensitivity) { mouseSensitivity_ = sensitivity; }
-        float getMouseSensitivity() const { return mouseSensitivity_; }
-
-        void setFieldOfView(float fov) { fov_ = fov; }
-        float getFieldOfView() const { return fov_; }
-
-        void setNearPlane(float near) { nearPlane_ = near; }
-        float getNearPlane() const { return nearPlane_; }
-
-        void setFarPlane(float far) { farPlane_ = far; }
-        float getFarPlane() const { return farPlane_; }
-
-        void setCameraType(CameraType type) { cameraType_ = type; }
-        CameraType getCameraType() const { return cameraType_; }
-
-        void setOrthographicSize(float size) { orthoSize_ = size; }
-        float getOrthographicSize() const { return orthoSize_; }
-
-        // New features
-        void setRotation(float pitch, float yaw, float roll = 0.0f) {
-            pitch_ = pitch;
-            yaw_ = yaw;
-            updateCameraVectors();
+            return target_ + targetOffset_ + offset;
         }
 
-        void zoom(float delta) {
-            if (cameraType_ == CameraType::Perspective) {
-                fov_ = Math::clamp(fov_ - delta, 1.0f, 120.0f);
-            } else {
-                orthoSize_ = Math::clamp(orthoSize_ - delta * 0.1f, 0.1f, 100.0f);
+        const char* getMovementTypeString() const {
+            switch (movementType_) {
+                case CameraMovementType::FPS: return "FPS";
+                case CameraMovementType::Orbital: return "Orbital";
+                case CameraMovementType::Free: return "Free";
+                default: return "Unknown";
             }
         }
-
-    private:
-        void updateCameraVectors() {
-            // Calculate forward from yaw and pitch
-            Vec3 front;
-            front.x = cosf(degreesToRadians(yaw_)) * cosf(degreesToRadians(pitch_));
-            front.y = sinf(degreesToRadians(pitch_));
-            front.z = sinf(degreesToRadians(yaw_)) * cosf(degreesToRadians(pitch_));
-
-            forward_ = Vector::normalize(front);
-            right_ = Vector::normalize(Vector::cross(forward_, worldUp_));
-            up_ = Vector::normalize(Vector::cross(right_, forward_));
-        }
-
-        Transform transform_;
-
-        // Camera vectors
-        Vec3 forward_;
-        Vec3 right_;
-        Vec3 up_;
-        Vec3 worldUp_;
-
-        // Camera settings
-        float fov_;
-        float nearPlane_;
-        float farPlane_;
-        float orthoSize_ = 10.0f;
-        CameraType cameraType_;
-
-        // Movement settings
-        float movementSpeed_;
-        float mouseSensitivity_;
-
-        // Orientation
-        float yaw_;
-        float pitch_;
     };
 
-}
+    // ========================================
+    // Camera Utilities
+    // ========================================
+
+    namespace CameraUtils {
+
+        // Create a camera looking at a target from a distance
+        inline Camera createLookAt(const Math::Vec3& position, const Math::Vec3& target,
+                                 const Math::Vec3& up = Math::Vector::Constants::UP) {
+            Camera camera(position, target, up);
+            return camera;
+        }
+
+        // Create an orbital camera around a target
+        inline Camera createOrbital(const Math::Vec3& target, float distance,
+                                   float yaw = -90.0f, float pitch = 0.0f) {
+            Camera camera;
+            camera.setMovementType(CameraMovementType::Orbital);
+            camera.setTarget(target);
+            camera.setOrbitDistance(distance);
+
+            // Set initial angles
+            Math::Vec3 position;
+            position.x = target.x + distance * cosf(Math::degreesToRadians(pitch)) * cosf(Math::degreesToRadians(yaw));
+            position.y = target.y + distance * sinf(Math::degreesToRadians(pitch));
+            position.z = target.z + distance * cosf(Math::degreesToRadians(pitch)) * sinf(Math::degreesToRadians(yaw));
+
+            camera.lookAt(position, target, Math::Vector::Constants::UP);
+            return camera;
+        }
+
+        // Create a perspective camera
+        inline Camera createPerspective(float fov = 60.0f, float near = 0.01f, float far = 1000.0f) {
+            Camera camera;
+            camera.setCameraType(CameraType::Perspective);
+            camera.setFieldOfView(fov);
+            camera.setNearPlane(near);
+            camera.setFarPlane(far);
+            return camera;
+        }
+
+        // Create an orthographic camera
+        inline Camera createOrthographic(float size = 10.0f, float near = 0.01f, float far = 1000.0f) {
+            Camera camera;
+            camera.setCameraType(CameraType::Orthographic);
+            camera.setOrthographicSize(size);
+            camera.setNearPlane(near);
+            camera.setFarPlane(far);
+            return camera;
+        }
+
+        // Smooth camera transitions
+        inline Camera interpolate(const Camera& from, const Camera& to, float t) {
+            Camera result = from;
+
+            // Interpolate position
+            Math::Vec3 fromPos = from.getPosition();
+            Math::Vec3 toPos = to.getPosition();
+            result.setPosition(Math::Vector::lerp(fromPos, toPos, t));
+
+            // Interpolate target (for orbital cameras)
+            if (from.getMovementType() == CameraMovementType::Orbital ||
+                to.getMovementType() == CameraMovementType::Orbital) {
+                Math::Vec3 fromTarget = from.getTarget();
+                Math::Vec3 toTarget = to.getTarget();
+                result.setTarget(Math::Vector::lerp(fromTarget, toTarget, t));
+            }
+
+            // Interpolate FOV
+            float fromFov = from.getFieldOfView();
+            float toFov = to.getFieldOfView();
+            result.setFieldOfView(Math::lerp(fromFov, toFov, t));
+
+            return result;
+        }
+
+        // Calculate screen space bounds of a 3D bounding box
+        struct ScreenBounds {
+            Math::Vec2 min, max;
+            bool visible;
+        };
+
+        inline ScreenBounds getScreenBounds(const Camera& camera,
+                                          const Math::Vec3& boundsMin,
+                                          const Math::Vec3& boundsMax,
+                                          const Math::Vec2& screenSize) {
+            ScreenBounds result = {{FLT_MAX, FLT_MAX}, {-FLT_MAX, -FLT_MAX}, false};
+
+            float aspect = screenSize.x / screenSize.y;
+            Math::Mat4 viewProj = camera.getViewProjectionMatrix(aspect);
+
+            // Test all 8 corners of the bounding box
+            Math::Vec3 corners[8] = {
+                {boundsMin.x, boundsMin.y, boundsMin.z},
+                {boundsMax.x, boundsMin.y, boundsMin.z},
+                {boundsMin.x, boundsMax.y, boundsMin.z},
+                {boundsMax.x, boundsMax.y, boundsMin.z},
+                {boundsMin.x, boundsMin.y, boundsMax.z},
+                {boundsMax.x, boundsMin.y, boundsMax.z},
+                {boundsMin.x, boundsMax.y, boundsMax.z},
+                {boundsMax.x, boundsMax.y, boundsMax.z}
+            };
+
+            bool anyVisible = false;
+
+            for (int i = 0; i < 8; i++) {
+                Math::Vec4 clipPos = Math::Matrix::multiply(viewProj, Math::Vector::make(corners[i], 1.0f));
+
+                if (clipPos.w > 0) {  // In front of camera
+                    anyVisible = true;
+
+                    // Convert to NDC
+                    Math::Vec3 ndc = Math::Vec3{clipPos.x / clipPos.w, clipPos.y / clipPos.w, clipPos.z / clipPos.w};
+
+                    // Convert to screen space
+                    Math::Vec2 screen;
+                    screen.x = (ndc.x + 1.0f) * 0.5f * screenSize.x;
+                    screen.y = (1.0f - ndc.y) * 0.5f * screenSize.y;
+
+                    result.min.x = fminf(result.min.x, screen.x);
+                    result.min.y = fminf(result.min.y, screen.y);
+                    result.max.x = fmaxf(result.max.x, screen.x);
+                    result.max.y = fmaxf(result.max.y, screen.y);
+                }
+            }
+
+            result.visible = anyVisible;
+            return result;
+        }
+    }
+
+} // namespace Engine
+
+// ========================================
+// Backward Compatibility
+// ========================================
+
+// For existing code that expects the old Camera interface
+using Camera = Engine::Camera;
 
 
 ## File: ./Camera.hpp
@@ -1963,15 +3552,6 @@ using Camera = Engine::Camera;
 
 
 
-## File: ./InputManager.cpp
-#include "InputManager.h"
-InputManager& InputManager::instance(){ static InputManager i; return i; }
-void InputManager::keyDown(uint16_t k){ s.insert(k); }
-void InputManager::keyUp(uint16_t k){ s.erase(k); }
-bool InputManager::down(uint16_t k) const{ return s.count(k)!=0; }
-
-
-
 ## File: ./MetalCppShim.cpp
 #define NS_PRIVATE_IMPLEMENTATION
 #define CA_PRIVATE_IMPLEMENTATION
@@ -1980,23 +3560,6 @@ bool InputManager::down(uint16_t k) const{ return s.count(k)!=0; }
 #include <QuartzCore/QuartzCore.hpp>
 #include <QuartzCore/CAMetalDrawable.hpp>
 #include <Metal/Metal.hpp>
-
-
-
-## File: ./InputManager.h
-#pragma once
-#include <unordered_set>
-#include <cstdint>
-
-class InputManager {
-public:
-  static InputManager& instance();
-  void keyDown(uint16_t k);
-  void keyUp(uint16_t k);
-  bool down(uint16_t k) const;
-private:
-  std::unordered_set<uint16_t> s;
-};
 
 
 

@@ -1,4 +1,4 @@
-// Camera.hpp
+// Engine/Camera.hpp
 // Enhanced Camera system with better architecture and features
 #pragma once
 
