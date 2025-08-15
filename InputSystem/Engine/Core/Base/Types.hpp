@@ -10,6 +10,9 @@
 #include <functional>
 #include <unordered_map>
 #include <stdexcept>
+#include <vector>      // Added - needed for std::vector
+#include <array>       // Added - needed for std::array
+#include <algorithm>   // Added - needed for std::remove
 
 namespace Engine {
 namespace Core {

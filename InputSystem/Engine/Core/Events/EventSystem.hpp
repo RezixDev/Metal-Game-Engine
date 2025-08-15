@@ -10,6 +10,7 @@
 #include <memory>
 #include <mutex>
 #include <any>
+#include <string>
 
 namespace Engine {
 namespace Core {
@@ -97,11 +98,11 @@ namespace Core {
         uint32 subscribe(std::function<bool(const EventType&)> handler) {
             std::lock_guard<std::mutex> lock(mutex_);
 
-            auto handlerPtr = std::make_unique<FunctionEventHandler<EventType>>(std::move(handler));
+            auto handlerPtr = std::make_shared<FunctionEventHandler<EventType>>(std::move(handler));
             uint32 id = nextHandlerId_++;
 
             auto& handlers = getHandlers<EventType>();
-            handlers[id] = std::move(handlerPtr);
+            handlers[id] = handlerPtr;
 
             return id;
         }
@@ -111,11 +112,11 @@ namespace Core {
         uint32 subscribe(T* instance, bool (T::*method)(const EventType&)) {
             std::lock_guard<std::mutex> lock(mutex_);
 
-            auto handlerPtr = std::make_unique<MethodEventHandler<T, EventType>>(instance, method);
+            auto handlerPtr = std::make_shared<MethodEventHandler<T, EventType>>(instance, method);
             uint32 id = nextHandlerId_++;
 
             auto& handlers = getHandlers<EventType>();
-            handlers[id] = std::move(handlerPtr);
+            handlers[id] = handlerPtr;
 
             return id;
         }
@@ -135,7 +136,7 @@ namespace Core {
 
             auto& handlers = getHandlers<EventType>();
             for (auto& [id, handler] : handlers) {
-                if (handler->handle(event)) {
+                if (handler && handler->handle(event)) {
                     break; // Event was handled, stop propagation
                 }
             }
@@ -214,24 +215,103 @@ namespace Core {
         uint32 height;
         uint32 oldWidth;
         uint32 oldHeight;
+
+        WindowResizeEvent() = default;
+        WindowResizeEvent(uint32 w, uint32 h, uint32 ow, uint32 oh)
+            : width(w), height(h), oldWidth(ow), oldHeight(oh) {}
     };
 
     struct WindowCloseEvent : public Event {};
 
-    struct KeyPressedEvent : public Event { uint16 keyCode; bool isRepeat; };
-    struct KeyReleasedEvent : public Event { uint16 keyCode; };
-    struct MouseButtonPressedEvent : public Event { uint8 button; float x, y; };
-    struct MouseButtonReleasedEvent : public Event { uint8 button; float x, y; };
-    struct MouseMovedEvent : public Event { float x, y; float deltaX, deltaY; };
-    struct MouseScrolledEvent : public Event { float deltaX, deltaY; };
+    struct KeyPressedEvent : public Event {
+        uint16 keyCode;
+        bool isRepeat;
 
-    struct FrameBeginEvent : public Event { float deltaTime; uint64 frameNumber; };
-    struct FrameEndEvent : public Event { float frameTime; uint64 frameNumber; };
-    struct RenderDeviceCreatedEvent : public Event { void* device; };
+        KeyPressedEvent() = default;
+        KeyPressedEvent(uint16 key, bool repeat) : keyCode(key), isRepeat(repeat) {}
+    };
+
+    struct KeyReleasedEvent : public Event {
+        uint16 keyCode;
+
+        KeyReleasedEvent() = default;
+        explicit KeyReleasedEvent(uint16 key) : keyCode(key) {}
+    };
+
+    struct MouseButtonPressedEvent : public Event {
+        uint8 button;
+        float x, y;
+
+        MouseButtonPressedEvent() = default;
+        MouseButtonPressedEvent(uint8 btn, float px, float py) : button(btn), x(px), y(py) {}
+    };
+
+    struct MouseButtonReleasedEvent : public Event {
+        uint8 button;
+        float x, y;
+
+        MouseButtonReleasedEvent() = default;
+        MouseButtonReleasedEvent(uint8 btn, float px, float py) : button(btn), x(px), y(py) {}
+    };
+
+    struct MouseMovedEvent : public Event {
+        float x, y;
+        float deltaX, deltaY;
+
+        MouseMovedEvent() = default;
+        MouseMovedEvent(float px, float py, float dx, float dy) : x(px), y(py), deltaX(dx), deltaY(dy) {}
+    };
+
+    struct MouseScrolledEvent : public Event {
+        float deltaX, deltaY;
+
+        MouseScrolledEvent() = default;
+        MouseScrolledEvent(float dx, float dy) : deltaX(dx), deltaY(dy) {}
+    };
+
+    struct FrameBeginEvent : public Event {
+        float deltaTime;
+        uint64 frameNumber;
+
+        FrameBeginEvent() = default;
+        FrameBeginEvent(float dt, uint64 frame) : deltaTime(dt), frameNumber(frame) {}
+    };
+
+    struct FrameEndEvent : public Event {
+        float frameTime;
+        uint64 frameNumber;
+
+        FrameEndEvent() = default;
+        FrameEndEvent(float ft, uint64 frame) : frameTime(ft), frameNumber(frame) {}
+    };
+
+    struct RenderDeviceCreatedEvent : public Event {
+        void* device;
+
+        RenderDeviceCreatedEvent() = default;
+        explicit RenderDeviceCreatedEvent(void* dev) : device(dev) {}
+    };
+
     struct RenderDeviceDestroyedEvent : public Event {};
 
-    struct ResourceLoadedEvent : public Event { std::string resourcePath; void* resource; };
-    struct ResourceUnloadedEvent : public Event { std::string resourcePath; };
+    struct ResourceLoadedEvent : public Event {
+        std::string resourcePath;
+        void* resource;
+
+        ResourceLoadedEvent() = default;
+        ResourceLoadedEvent(const std::string& path, void* res) : resourcePath(path), resource(res) {}
+    };
+
+    struct ResourceUnloadedEvent : public Event {
+        std::string resourcePath;
+
+        ResourceUnloadedEvent() = default;
+        explicit ResourceUnloadedEvent(const std::string& path) : resourcePath(path) {}
+    };
+
+    // ========================================
+    // Convenience Macros
+    // ========================================
 
     #define SUBSCRIBE_EVENT(eventType, handler) \
         Engine::Core::EventBus::getInstance().subscribe<eventType>(handler)
