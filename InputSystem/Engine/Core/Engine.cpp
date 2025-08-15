@@ -1,7 +1,7 @@
 // Engine/Core/Engine.cpp
-// Engine implementation
 #include "Engine.hpp"
 #include "Base/Types.hpp"
+#include <cstdio>  // Added for printf
 
 namespace Engine {
 namespace Core {
@@ -18,12 +18,11 @@ namespace Core {
             return false;
         }
 
-        LOG_CORE_INFO("=== Engine Initialization Started ===");
-        LOG_CORE_INFO("Application: %s", config_.applicationName.c_str());
-
+        printf("=== Engine Initialization Started ===\n");
+        printf("Application: %s\n", config_.applicationName.c_str());
 
         if (!initializeMemory()) {
-            LOG_CORE_ERROR("Failed to initialize memory management");
+            printf("ERROR: Failed to initialize memory management\n");
             return false;
         }
 
@@ -31,11 +30,10 @@ namespace Core {
         Time::getInstance().initialize();
 
         // Publish initialization event
-        // Use direct access instead of macro from within the class
         EventBus::getInstance().publish(ApplicationStartEvent{config_.applicationName});
 
         initialized_ = true;
-        LOG_CORE_INFO("=== Engine Initialization Complete ===");
+        printf("=== Engine Initialization Complete ===\n");
 
         return true;
     }
@@ -45,17 +43,16 @@ namespace Core {
             return;
         }
 
-        LOG_CORE_INFO("=== Engine Shutdown Started ===");
+        printf("=== Engine Shutdown Started ===\n");
 
         // Publish shutdown event
-        // Use direct access instead of macro from within the class
         EventBus::getInstance().publish(ApplicationShutdownEvent{0});
 
         // Cleanup subsystems in reverse order
         Memory::MemoryManager::getInstance().cleanup();
         EventBus::getInstance().clearAllHandlers();
 
-        LOG_CORE_INFO("=== Engine Shutdown Complete ===");
+        printf("=== Engine Shutdown Complete ===\n");
 
         initialized_ = false;
     }
@@ -81,7 +78,6 @@ namespace Core {
     }
 
     bool Engine::initializeMemory() {
-        // Use direct access instead of macro from within the class
         auto& memMgr = Memory::MemoryManager::getInstance();
 
         // Create standard memory pools
@@ -91,10 +87,24 @@ namespace Core {
         // Create frame stack allocator
         memMgr.createStackAllocator("Frame", config_.frameStackSize);
 
-        LOG_CORE_INFO("Memory management initialized");
+        printf("Memory management initialized\n");
         return true;
     }
 
+    bool Engine::initializeConfig() {
+        // Load configuration from file if it exists
+        Config& config = Config::getInstance();
+
+        if (!config_.configFileName.empty()) {
+            if (config.loadFromFile(config_.configFileName)) {
+                printf("Configuration loaded from: %s\n", config_.configFileName.c_str());
+            } else {
+                printf("Configuration file not found: %s (using defaults)\n", config_.configFileName.c_str());
+            }
+        }
+
+        return true;
+    }
 
 } // namespace Core
 } // namespace Engine

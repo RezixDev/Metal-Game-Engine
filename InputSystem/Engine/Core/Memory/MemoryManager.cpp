@@ -1,12 +1,9 @@
-// ========================================
 // Engine/Core/Memory/MemoryManager.cpp
-// Memory manager implementation
-// ========================================
-
 #include "MemoryManager.hpp"
 #include <cstdlib>
 #include <cstring>
-#include <new>  // Added for std::align
+#include <new>      // Added for std::bad_alloc
+#include <cstdio>   // Added for printf
 
 namespace Engine {
 namespace Core {
@@ -36,14 +33,14 @@ namespace Memory {
             freeBlocks_.push_back(ptr + i * blockSize_);
         }
 
-        LOG_CORE_INFO("Created memory pool: %zu blocks of %zu bytes (total: %zu bytes)",
-                      blockCount, blockSize_, totalSize);
+        printf("[MemoryPool] Created: %zu blocks of %zu bytes (total: %zu bytes)\n",
+               blockCount, blockSize_, totalSize);
     }
 
     MemoryPool::~MemoryPool() {
         if (memory_) {
             std::free(memory_);
-            LOG_CORE_INFO("Destroyed memory pool with %zu used blocks", usedBlocks_.load());
+            printf("[MemoryPool] Destroyed with %zu used blocks\n", usedBlocks_.load());
         }
     }
 
@@ -51,7 +48,7 @@ namespace Memory {
         std::lock_guard<std::mutex> lock(mutex_);
 
         if (freeBlocks_.empty()) {
-            LOG_CORE_ERROR("Memory pool exhausted! No free blocks available");
+            printf("[MemoryPool] ERROR: Pool exhausted! No free blocks available\n");
             return nullptr;
         }
 
@@ -83,13 +80,13 @@ namespace Memory {
         current_ = start_;
         end_ = start_ + size;
 
-        LOG_CORE_INFO("Created stack allocator: %zu bytes", size);
+        printf("[StackAllocator] Created: %zu bytes\n", size);
     }
 
     StackAllocator::~StackAllocator() {
         if (start_) {
             std::free(start_);
-            LOG_CORE_INFO("Destroyed stack allocator");
+            printf("[StackAllocator] Destroyed\n");
         }
     }
 
@@ -100,14 +97,14 @@ namespace Memory {
         }
 
         // Align current pointer
-        char* aligned = reinterpret_cast<char*>(
-            AlignUp(reinterpret_cast<uintptr_t>(current_), alignment)
-        );
+        uintptr_t currentAddr = reinterpret_cast<uintptr_t>(current_);
+        uintptr_t alignedAddr = AlignUp(currentAddr, alignment);
+        char* aligned = reinterpret_cast<char*>(alignedAddr);
 
         // Check if we have enough space
         if (aligned + size > end_) {
-            LOG_CORE_ERROR("Stack allocator out of memory! Requested: %zu, Available: %zu",
-                          size, end_ - aligned);
+            printf("[StackAllocator] ERROR: Out of memory! Requested: %zu, Available: %ld\n",
+                   size, end_ - aligned);
             return nullptr;
         }
 
@@ -124,7 +121,7 @@ namespace Memory {
         std::lock_guard<std::mutex> lock(mutex_);
 
         if (pools_.find(name) != pools_.end()) {
-            LOG_CORE_WARNING("Memory pool '%s' already exists", name.c_str());
+            printf("[MemoryManager] WARNING: Pool '%s' already exists\n", name.c_str());
             return;
         }
 
@@ -147,7 +144,7 @@ namespace Memory {
         std::lock_guard<std::mutex> lock(mutex_);
 
         if (stackAllocators_.find(name) != stackAllocators_.end()) {
-            LOG_CORE_WARNING("Stack allocator '%s' already exists", name.c_str());
+            printf("[MemoryManager] WARNING: Stack allocator '%s' already exists\n", name.c_str());
             return;
         }
 
@@ -185,17 +182,17 @@ namespace Memory {
     void MemoryManager::logStats() const {
         std::lock_guard<std::mutex> lock(mutex_);
 
-        LOG_CORE_INFO("=== Memory Manager Statistics ===");
+        printf("=== Memory Manager Statistics ===\n");
 
         for (const auto& [name, pool] : pools_) {
-            LOG_CORE_INFO("Pool '%s': %zu/%zu blocks used (%zu bytes)",
-                         name.c_str(), pool->getUsedBlocks(), pool->getTotalBlocks(),
-                         pool->getUsedBlocks() * pool->getBlockSize());
+            printf("Pool '%s': %zu/%zu blocks used (%zu bytes)\n",
+                   name.c_str(), pool->getUsedBlocks(), pool->getTotalBlocks(),
+                   pool->getUsedBlocks() * pool->getBlockSize());
         }
 
         for (const auto& [name, allocator] : stackAllocators_) {
-            LOG_CORE_INFO("Stack '%s': %zu/%zu bytes used",
-                         name.c_str(), allocator->getUsed(), allocator->getSize());
+            printf("Stack '%s': %zu/%zu bytes used\n",
+                   name.c_str(), allocator->getUsed(), allocator->getSize());
         }
     }
 
@@ -203,7 +200,7 @@ namespace Memory {
         std::lock_guard<std::mutex> lock(mutex_);
         pools_.clear();
         stackAllocators_.clear();
-        LOG_CORE_INFO("Memory manager cleaned up");
+        printf("[MemoryManager] Cleaned up\n");
     }
 
     // ========================================
@@ -224,14 +221,14 @@ namespace Memory {
     void MemoryTracker::dumpLeaks() const {
         std::lock_guard<std::mutex> lock(mutex_);
         if (allocations_.empty()) {
-            LOG_CORE_INFO("No memory leaks detected");
+            printf("[MemoryTracker] No memory leaks detected\n");
             return;
         }
 
-        LOG_CORE_ERROR("Memory leaks detected: %zu allocations", allocations_.size());
+        printf("[MemoryTracker] Memory leaks detected: %zu allocations\n", allocations_.size());
         for (const auto& [ptr, info] : allocations_) {
-            LOG_CORE_ERROR("  Leak: %zu bytes at %p (%s:%d)",
-                          info.size, ptr, info.file.c_str(), info.line);
+            printf("  Leak: %zu bytes at %p (%s:%d)\n",
+                   info.size, ptr, info.file.c_str(), info.line);
         }
     }
     #endif
