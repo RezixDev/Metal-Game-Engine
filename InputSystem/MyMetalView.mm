@@ -1,11 +1,16 @@
-// MyMetalView_Updated.mm
-// Updated to work with the new architecture while maintaining compatibility
+// MyMetalView.mm
 #import "MyMetalView.h"
 #import <QuartzCore/CAMetalLayer.h>
 #import <Metal/Metal.h>
+
+// Include C++ headers in the implementation only
 #import "Renderer.hpp"
 #import "MetalApplication.hpp"
 #import "Engine/Core/Time.hpp"
+#import "Engine/Camera.hpp"
+
+// Use the Camera type alias from the global namespace
+using Camera = Engine::Camera;
 
 @implementation MyMetalView {
     CAMetalLayer* _metalLayer;

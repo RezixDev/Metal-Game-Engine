@@ -4,6 +4,8 @@
 
 #include "Math.hpp"
 #include "Transform.hpp"
+#include <cfloat>
+#include <cmath>
 
 namespace Engine {
 

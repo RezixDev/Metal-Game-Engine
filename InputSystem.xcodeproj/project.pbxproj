@@ -31,10 +31,21 @@
 			buildPhase = AE3F5EE82E47FD9F00C16CF3 /* Sources */;
 			membershipExceptions = (
 				AppDelegate.h,
+				Engine/Application/Application.hpp,
 				Engine/Camera.hpp,
+				Engine/Core/Base/Logger.hpp,
+				Engine/Core/Base/Types.hpp,
+				Engine/Core/Engine.hpp,
+				Engine/Core/Events/EventSystem.hpp,
 				Engine/Core/Math.hpp,
+				Engine/Core/Memory/MemoryManager.hpp,
+				Engine/Core/Time.hpp,
 				Engine/Core/Transform.hpp,
+				Engine/Graphics/RenderSystem.hpp,
+				Engine/Scene/Scene.hpp,
 				GeometryBuilder.hpp,
+				InputManager.hpp,
+				MetalApplication.hpp,
 				MyMetalView.h,
 				Renderer.hpp,
 			);
