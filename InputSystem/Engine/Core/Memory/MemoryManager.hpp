@@ -13,7 +13,8 @@
 #include <atomic>
 #include <mutex>
 #include <string>
-#include <cstdlib>  // Added for std::aligned_alloc
+#include <cstdlib>
+#include <cstring>
 
 namespace Engine {
 namespace Core {

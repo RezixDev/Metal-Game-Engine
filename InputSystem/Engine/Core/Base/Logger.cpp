@@ -6,6 +6,7 @@
 #include "Logger.hpp"
 #include <iostream>
 #include <iomanip>
+#include <chrono>
 
 namespace Engine {
 namespace Core {
@@ -35,6 +36,7 @@ namespace Core {
             case LogCategory::Audio:    categoryStr = "AUDIO"; break;
             case LogCategory::Network:  categoryStr = "NETWORK"; break;
             case LogCategory::Game:     categoryStr = "GAME"; break;
+            case LogCategory::Count:    categoryStr = "UNKNOWN"; break; // Added missing case
         }
 
         std::cout << colorCode << "[" << timestamp << "] [" << levelStr << "] [" << categoryStr << "] "
@@ -78,6 +80,7 @@ namespace Core {
             case LogCategory::Audio:    categoryStr = "AUDIO"; break;
             case LogCategory::Network:  categoryStr = "NETWORK"; break;
             case LogCategory::Game:     categoryStr = "GAME"; break;
+            case LogCategory::Count:    categoryStr = "UNKNOWN"; break; // Added missing case
         }
 
         file_ << "[" << timestamp << "] [" << levelStr << "] [" << categoryStr << "] "
@@ -95,7 +98,9 @@ namespace Core {
     }
 
     void Logger::setCategoryEnabled(LogCategory category, bool enabled) {
+        if (category < LogCategory::Count) {  // Added bounds check
         categoryEnabled_[static_cast<size_t>(category)] = enabled;
+    }
     }
 
     void Logger::addSink(std::unique_ptr<LogSink> sink) {
@@ -121,8 +126,11 @@ namespace Core {
     }
 
     bool Logger::isCategoryEnabled(LogCategory category) const {
+        if (category >= LogCategory::Count) {  // Added bounds check
+            return false;
+        }
         return categoryEnabled_[static_cast<size_t>(category)];
     }
 
 } // namespace Core
-} 
+} // namespace Engine
