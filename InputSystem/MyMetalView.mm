@@ -1,21 +1,17 @@
 // MyMetalView.mm
+// UPDATED VERSION - Clean integration with modern graphics abstraction
 #import "MyMetalView.h"
 #import <QuartzCore/CAMetalLayer.h>
 #import <Metal/Metal.h>
 
-// Include C++ headers in the implementation only
-#import "Renderer.hpp"
+// Include the updated application
 #import "MetalApplication.hpp"
 #import "Engine/Core/Time.hpp"
-#import "Engine/Camera.hpp"
-
-// Use the Camera type alias from the global namespace
-using Camera = Engine::Camera;
+extern "C" void AppInitWithMetal(id<MTLDevice> device, CAMetalLayer* layer);
 
 @implementation MyMetalView {
     CAMetalLayer* _metalLayer;
     id<MTLDevice> _device;
-    Renderer* _renderer;
     dispatch_source_t _renderTimer;
 
     // Application integration
@@ -32,7 +28,7 @@ using Camera = Engine::Camera;
     self = [super initWithFrame:frame];
     if (!self) return self;
 
-    NSLog(@"🚀 Starting MyMetalView initialization with new architecture...");
+    NSLog(@"🚀 Starting MyMetalView initialization with clean architecture...");
 
     // Initialize Metal
     _device = MTLCreateSystemDefaultDevice();
@@ -53,16 +49,19 @@ using Camera = Engine::Camera;
     self.layer = _metalLayer;
     self.wantsLayer = YES;
 
-    // Initialize renderer
-    _renderer = [[Renderer alloc] initWithDevice:_device layer:_metalLayer];
-    if (!_renderer) {
-        NSLog(@"❌ Failed to create renderer");
+    CGSize px = CGSizeMake(frame.size.width * _metalLayer.contentsScale,
+                              frame.size.height * _metalLayer.contentsScale);
+       _metalLayer.drawableSize = px;
+    
+    // Initialize application with the clean architecture
+    _application = getMetalApplication();
+
+    try {
+        AppInitWithMetal(_device, _metalLayer);
+    } catch (const std::exception& e) {
+        NSLog(@"❌ Failed to initialize application: %s", e.what());
         return nil;
     }
-
-    // Initialize application
-    _application = getMetalApplication();
-    _application->onInitialize();
 
     // Initialize time system
     Engine::Core::Time::getInstance().initialize();
@@ -72,8 +71,8 @@ using Camera = Engine::Camera;
     // Create render timer for 60 FPS
     [self setupRenderTimer:60.0];
 
-    NSLog(@"✅ MyMetalView initialization complete with new architecture");
-    NSLog(@"📦 Using clean architecture with Application framework");
+    NSLog(@"✅ MyMetalView initialization complete with clean architecture");
+    NSLog(@"📦 Using modern graphics abstraction with automatic resource management");
     NSLog(@"🎮 Controls: WASD=move, Space=up, Q=down, R=reset, Right-click+drag=look");
 
     return self;
@@ -108,13 +107,7 @@ using Camera = Engine::Camera;
     // Update application
     _application->onUpdate(deltaTime);
 
-    // Render with the camera from application
-    Camera* camera = _application->getCamera();
-    if (camera) {
-        [_renderer draw:deltaTime withCamera:*camera];
-    }
-
-    // Call application render (for future use)
+    // Render the scene
     _application->onRender();
 
     // Debug output every 60 frames
@@ -131,8 +124,11 @@ using Camera = Engine::Camera;
 
         if (inputState.moveForward || inputState.moveBackward ||
             inputState.moveLeft || inputState.moveRight) {
-            vector_float3 pos = camera->getPosition();
-            NSLog(@"📍 Camera pos: (%.2f, %.2f, %.2f)", pos.x, pos.y, pos.z);
+            auto camera = _application->getCamera();
+            if (camera) {
+                vector_float3 pos = camera->getPosition();
+                NSLog(@"📍 Camera pos: (%.2f, %.2f, %.2f)", pos.x, pos.y, pos.z);
+            }
         }
     }
 }
@@ -240,8 +236,12 @@ using Camera = Engine::Camera;
         _renderTimer = nil;
     }
 
-    [_renderer cleanup];
-    _renderer = nil;
+    // Clean up application
+    if (_application) {
+        _application->onShutdown();
+        _application = nullptr;
+    }
+
     _metalLayer = nil;
     _device = nil;
 

@@ -86,7 +86,11 @@ namespace Math {
         }
 
         inline Vec3 normalize(const Vec3& v) {
-            return simd_normalize(v);
+            float len = simd_length(v);
+            if (len < Constants::EPSILON) {
+                return Vec3{0,0,0}; // or return v; depending on what you want
+            }
+            return v / len;
         }
 
         inline Vec3 cross(const Vec3& a, const Vec3& b) {

@@ -1,310 +1,278 @@
-//
-// Simple Solid Renderer.mm - Multiple small solid cubes for better visibility
-//
-#import "Renderer.hpp"
-#import "GeometryBuilder.hpp"
-#import <simd/simd.h>
+// Renderer.mm
+// UPDATED VERSION - Clean implementation using graphics abstraction
+#include "Renderer.hpp"
+#include <stdexcept>
+#include <cstdio>
 
-// Uniform buffer structure
-typedef struct {
-    matrix_float4x4 modelViewProjection;
-    matrix_float4x4 model;
-    matrix_float4x4 view;
-    matrix_float4x4 projection;
-} Uniforms;
+Renderer::Renderer(Engine::Graphics::RenderDevicePtr device)
+    : device_(device), frameCount_(0), width_(0), height_(0) {
 
-@implementation Renderer {
-    id<MTLDevice> _device;
-    CAMetalLayer* _layer;
-    id<MTLCommandQueue> _commandQueue;
-    id<MTLRenderPipelineState> _pipelineState;
-    id<MTLDepthStencilState> _depthStencilState;
-    id<MTLBuffer> _vertexBuffer;
-    id<MTLBuffer> _indexBuffer;
-    id<MTLBuffer> _uniformBuffer;
-    id<MTLTexture> _depthTexture;
-    
-    NSUInteger _indexCount;
-    BOOL _isCleanedUp;
-    int _frameCount;
+    if (!device_ || !device_->isValid()) {
+        throw std::runtime_error("Invalid render device provided to Renderer");
+    }
+
+    printf("🎯 Creating modern Renderer with device: %s\n", device_->getDeviceName().c_str());
+
+    createPipeline();
+    createUniformBuffer();
+
+    printf("✅ Modern Renderer initialized successfully\n");
 }
 
-- (instancetype)initWithDevice:(id<MTLDevice>)device layer:(CAMetalLayer *)layer {
-    if (!(self = [super init])) return nil;
-    
-    _device = device;
-    _layer = layer;
-    _commandQueue = [_device newCommandQueue];
-    _frameCount = 0;
-    
-    // Setup pipeline
-    if (![self setupPipeline]) {
-        NSLog(@"Failed to setup pipeline");
-        return nil;
-    }
-    
-    // Setup geometry
-    [self setupGeometry];
-    
-    // Setup uniform buffer
-    _uniformBuffer = [_device newBufferWithLength:sizeof(Uniforms)
-                                          options:MTLResourceStorageModeManaged];
-    
-    NSLog(@"🎯 Renderer initialized successfully");
-    return self;
+Renderer::~Renderer() {
+    printf("🧹 Renderer destroyed\n");
 }
 
-- (BOOL)setupPipeline {
-    NSError* error = nil;
-    
-    // Load shaders
-    id<MTLLibrary> library = [_device newDefaultLibrary];
-    id<MTLFunction> vertexFunction = [library newFunctionWithName:@"vs_main"];
-    id<MTLFunction> fragmentFunction = [library newFunctionWithName:@"fs_main"];
-    
-    if (!vertexFunction || !fragmentFunction) {
-        NSLog(@"❌ Failed to load shader functions");
-        return NO;
-    }
-    
-    NSLog(@"✅ Shaders loaded successfully");
-    
-    // Configure vertex descriptor
-    MTLVertexDescriptor* vertexDescriptor = [MTLVertexDescriptor vertexDescriptor];
-    
-    // Position attribute
-    vertexDescriptor.attributes[0].format = MTLVertexFormatFloat3;
-    vertexDescriptor.attributes[0].offset = offsetof(Vertex, position);
-    vertexDescriptor.attributes[0].bufferIndex = 0;
-    
-    // Color attribute
-    vertexDescriptor.attributes[1].format = MTLVertexFormatFloat3;
-    vertexDescriptor.attributes[1].offset = offsetof(Vertex, color);
-    vertexDescriptor.attributes[1].bufferIndex = 0;
-    
-    // Normal attribute
-    vertexDescriptor.attributes[2].format = MTLVertexFormatFloat3;
-    vertexDescriptor.attributes[2].offset = offsetof(Vertex, normal);
-    vertexDescriptor.attributes[2].bufferIndex = 0;
-    
-    // TexCoord attribute
-    vertexDescriptor.attributes[3].format = MTLVertexFormatFloat2;
-    vertexDescriptor.attributes[3].offset = offsetof(Vertex, texCoord);
-    vertexDescriptor.attributes[3].bufferIndex = 0;
-    
-    // Layout
-    vertexDescriptor.layouts[0].stride = sizeof(Vertex);
-    vertexDescriptor.layouts[0].stepRate = 1;
-    vertexDescriptor.layouts[0].stepFunction = MTLVertexStepFunctionPerVertex;
-    
-    // Create pipeline descriptor
-    MTLRenderPipelineDescriptor* pipelineDescriptor = [MTLRenderPipelineDescriptor new];
-    pipelineDescriptor.vertexFunction = vertexFunction;
-    pipelineDescriptor.fragmentFunction = fragmentFunction;
-    pipelineDescriptor.vertexDescriptor = vertexDescriptor;
-    pipelineDescriptor.colorAttachments[0].pixelFormat = MTLPixelFormatBGRA8Unorm;
-    pipelineDescriptor.depthAttachmentPixelFormat = MTLPixelFormatDepth32Float;
-    
-    // Create pipeline state
-    _pipelineState = [_device newRenderPipelineStateWithDescriptor:pipelineDescriptor error:&error];
-    if (!_pipelineState) {
-        NSLog(@"❌ Failed to create pipeline state: %@", error.localizedDescription);
-        return NO;
-    }
-    
-    // Create depth stencil state
-    MTLDepthStencilDescriptor* depthDescriptor = [MTLDepthStencilDescriptor new];
-    depthDescriptor.depthCompareFunction = MTLCompareFunctionLess;
-    depthDescriptor.depthWriteEnabled = YES;
-    _depthStencilState = [_device newDepthStencilStateWithDescriptor:depthDescriptor];
-    
-    NSLog(@"✅ Pipeline created successfully");
-    return YES;
-}
+void Renderer::createPipeline() {
+    // Create shaders using the built-in shader source
+    std::string vertexShaderSource = R"(
+#include <metal_stdlib>
+using namespace metal;
 
-- (void)setupGeometry {
-    // Create a small cube that's easy to see
-    MeshData cubeMesh = GeometryBuilder::createCube(1.0f); // Small 1x1x1 cube
-    
-    _vertexBuffer = [_device newBufferWithBytes:cubeMesh.vertexData.bytes
-                                          length:cubeMesh.vertexData.length
-                                         options:MTLResourceStorageModeManaged];
-    
-    _indexBuffer = [_device newBufferWithBytes:cubeMesh.indexData.bytes
-                                         length:cubeMesh.indexData.length
-                                        options:MTLResourceStorageModeManaged];
-    
-    _indexCount = cubeMesh.indexCount;
-    
-    NSLog(@"✅ Geometry created: %lu indices for small cube", (unsigned long)_indexCount);
-}
+struct VertexIn {
+    float3 position [[attribute(0)]];
+    float3 color    [[attribute(1)]];
+    float3 normal   [[attribute(2)]];
+    float2 texCoord [[attribute(3)]];
+};
 
-- (void)ensureDepthTexture:(NSInteger)width height:(NSInteger)height {
-    if (_depthTexture && _depthTexture.width == width && _depthTexture.height == height) {
-        return;
-    }
-    
-    MTLTextureDescriptor* descriptor = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:MTLPixelFormatDepth32Float
-                                                                                           width:width
-                                                                                          height:height
-                                                                                       mipmapped:NO];
-    descriptor.storageMode = MTLStorageModePrivate;
-    descriptor.usage = MTLTextureUsageRenderTarget;
-    _depthTexture = [_device newTextureWithDescriptor:descriptor];
-}
+struct VertexOut {
+    float4 position [[position]];
+    float3 color;
+    float3 normal;
+    float2 texCoord;
+    float3 worldPosition;
+    float3 viewPosition;
+};
 
-- (void)draw:(double)deltaTime withCamera:(Camera&)camera {
-    if (_isCleanedUp) {
-        NSLog(@"Warning: Attempting to draw on cleaned up renderer");
-        return;
-    }
-    
-    _frameCount++;
-    
-    // Get drawable
-    id<CAMetalDrawable> drawable = [_layer nextDrawable];
-    if (!drawable) {
-        NSLog(@"❌ No drawable available");
-        return;
-    }
-    
-    id<MTLTexture> framebufferTexture = drawable.texture;
-    [self ensureDepthTexture:framebufferTexture.width height:framebufferTexture.height];
-    
-    // Calculate aspect ratio
-    float aspect = (float)framebufferTexture.width / (float)framebufferTexture.height;
-    
-    // Get matrices from camera
-    matrix_float4x4 projection = camera.getProjectionMatrix(aspect);
-    matrix_float4x4 view = camera.getViewMatrix();
-    
-    // Create render pass
-    MTLRenderPassDescriptor* renderPass = [MTLRenderPassDescriptor renderPassDescriptor];
-    renderPass.colorAttachments[0].texture = framebufferTexture;
-    renderPass.colorAttachments[0].loadAction = MTLLoadActionClear;
-    renderPass.colorAttachments[0].storeAction = MTLStoreActionStore;
-    renderPass.colorAttachments[0].clearColor = MTLClearColorMake(0.0, 0.1, 0.3, 1.0); // Dark blue background
-    renderPass.depthAttachment.texture = _depthTexture;
-    renderPass.depthAttachment.loadAction = MTLLoadActionClear;
-    renderPass.depthAttachment.storeAction = MTLStoreActionDontCare;
-    renderPass.depthAttachment.clearDepth = 1.0;
-    
-    // Create command buffer and encoder
-    id<MTLCommandBuffer> commandBuffer = [_commandQueue commandBuffer];
-    id<MTLRenderCommandEncoder> encoder = [commandBuffer renderCommandEncoderWithDescriptor:renderPass];
-    
-    // Configure render encoder
-    [encoder setRenderPipelineState:_pipelineState];
-    [encoder setDepthStencilState:_depthStencilState];
-    [encoder setCullMode:MTLCullModeBack]; // Enable back-face culling
-    [encoder setFrontFacingWinding:MTLWindingCounterClockwise];
-    
-    // Set vertex buffer
-    [encoder setVertexBuffer:_vertexBuffer offset:0 atIndex:0];
-    
-    // Define cube positions - create a 3D grid pattern
-    vector_float3 cubePositions[] = {
-        // Central cross pattern
-        {0.0f,  0.0f,  0.0f},   // Center cube (RED from cube colors)
-        {3.0f,  0.0f,  0.0f},   // Right
-        {-3.0f, 0.0f,  0.0f},   // Left
-        {0.0f,  3.0f,  0.0f},   // Up
-        {0.0f, -3.0f,  0.0f},   // Down
-        {0.0f,  0.0f,  3.0f},   // Forward
-        {0.0f,  0.0f, -3.0f},   // Back
-        
-        // Corner cubes for depth perception
-        {2.0f,  2.0f,  2.0f},
-        {-2.0f, -2.0f, -2.0f},
-        {2.0f, -2.0f,  2.0f},
-        {-2.0f,  2.0f, -2.0f},
-        
-        // Additional reference points
-        {5.0f,  0.0f,  0.0f},   // Far right
-        {-5.0f, 0.0f,  0.0f},   // Far left
-        {0.0f,  0.0f,  5.0f},   // Far forward
-        {0.0f,  0.0f, -5.0f},   // Far back
-    };
-    
-    int numCubes = sizeof(cubePositions) / sizeof(cubePositions[0]);
-    
-    // Draw each cube at different positions
-    for (int i = 0; i < numCubes; i++) {
-        // Create model matrix for this cube
-        matrix_float4x4 translation = Math::Matrix4::translation(
-            cubePositions[i].x,
-            cubePositions[i].y,
-            cubePositions[i].z
+struct Uniforms {
+    float4x4 modelViewProjection;
+    float4x4 model;
+    float4x4 view;
+    float4x4 projection;
+};
+
+vertex VertexOut vs_main(VertexIn in [[stage_in]],
+                         constant Uniforms& uniforms [[buffer(1)]],
+                         uint vertexID [[vertex_id]]) {
+    VertexOut out;
+
+    // Transform position to world space
+    float4 worldPos = uniforms.model * float4(in.position, 1.0);
+    out.worldPosition = worldPos.xyz;
+
+    // Transform to view space
+    float4 viewPos = uniforms.view * worldPos;
+    out.viewPosition = viewPos.xyz;
+
+    // Transform to clip space
+    out.position = uniforms.projection * viewPos;
+
+    // Transform normal to world space (assumes uniform scaling)
+    float3 worldNormal = (uniforms.model * float4(in.normal, 0.0)).xyz;
+    out.normal = normalize(worldNormal);
+
+    // Pass through other attributes
+    out.color = in.color;
+    out.texCoord = in.texCoord;
+
+    return out;
+}
+)";
+
+    std::string fragmentShaderSource = R"(
+#include <metal_stdlib>
+using namespace metal;
+
+struct VertexOut {
+    float4 position [[position]];
+    float3 color;
+    float3 normal;
+    float2 texCoord;
+    float3 worldPosition;
+    float3 viewPosition;
+};
+
+fragment float4 fs_main(VertexOut in [[stage_in]]) {
+    // Simple lighting calculation
+    float3 lightDirection = normalize(float3(0.5, -0.7, -0.5));
+    float3 lightColor = float3(1.0, 1.0, 1.0);
+    float3 ambientColor = float3(0.2, 0.2, 0.2);
+
+    // Normalize the normal
+    float3 normal = normalize(in.normal);
+
+    // Calculate diffuse lighting
+    float diffuseStrength = max(dot(normal, -lightDirection), 0.0);
+    float3 diffuse = diffuseStrength * lightColor;
+
+    // Combine lighting with vertex color
+    float3 finalColor = in.color * (ambientColor + diffuse);
+
+    return float4(finalColor, 1.0);
+}
+)";
+
+    try {
+        // Create shaders
+        auto vertexShader = device_->createShader(
+            Engine::Graphics::ShaderStage::Vertex,
+            vertexShaderSource,
+            "vs_main"
         );
-        
-        // No rotation - keep cubes stationary for easy reference
-        matrix_float4x4 model = translation;
-        
-        // Combine matrices
-        matrix_float4x4 viewModel = Math::Matrix4::multiply(view, model);
-        matrix_float4x4 mvp = Math::Matrix4::multiply(projection, viewModel);
-        
-        // Update uniform buffer for this cube
+
+        auto fragmentShader = device_->createShader(
+            Engine::Graphics::ShaderStage::Fragment,
+            fragmentShaderSource,
+            "fs_main"
+        );
+
+        // Create pipeline descriptor
+        Engine::Graphics::PipelineDescriptor pipelineDesc;
+        pipelineDesc.vertexShader = vertexShader;
+        pipelineDesc.fragmentShader = fragmentShader;
+        pipelineDesc.vertexLayout = Engine::Graphics::VertexLayout::PositionColorNormalTexCoord();
+        pipelineDesc.colorFormats = {Engine::Graphics::TextureFormat::BGRA8};
+        pipelineDesc.depthFormat = Engine::Graphics::TextureFormat::Depth32Float;
+        pipelineDesc.name = "MainPipeline";
+
+        // Configure render state
+        pipelineDesc.renderState.cullMode = Engine::Graphics::CullMode::Back;
+        pipelineDesc.renderState.windingOrder = Engine::Graphics::WindingOrder::CounterClockwise;
+        pipelineDesc.renderState.depthFunction = Engine::Graphics::CompareFunction::Less;
+        pipelineDesc.renderState.depthWriteEnabled = true;
+        pipelineDesc.renderState.depthTestEnabled = true;
+
+        // Create pipeline
+        pipeline_ = device_->createPipeline(pipelineDesc);
+
+        if (!pipeline_ || !pipeline_->isValid()) {
+            throw std::runtime_error("Failed to create render pipeline");
+        }
+
+        printf("✅ Render pipeline created successfully\n");
+
+    } catch (const std::exception& e) {
+        printf("❌ Failed to create pipeline: %s\n", e.what());
+        throw;
+    }
+}
+
+void Renderer::createUniformBuffer() {
+    size_t uniformSize = sizeof(Uniforms);
+    uniformBuffer_ = device_->createBuffer(
+        Engine::Graphics::BufferType::Uniform,
+        Engine::Graphics::BufferUsage::Dynamic,
+        uniformSize
+    );
+
+    if (!uniformBuffer_) {
+        throw std::runtime_error("Failed to create uniform buffer");
+    }
+
+    printf("✅ Uniform buffer created: %zu bytes\n", uniformSize);
+}
+
+void Renderer::beginFrame() {
+    device_->beginFrame();
+    frameCount_++;
+}
+
+void Renderer::render(const Engine::Camera& camera) {
+    if (renderItems_.empty()) {
+        return; // Nothing to render
+    }
+
+ 	auto depthBuffer = device_->getDepthBuffer();
+
+    // Calculate aspect ratio (use current window size or default)
+    float aspect = (width_ > 0 && height_ > 0) ?
+        static_cast<float>(width_) / static_cast<float>(height_) :
+        16.0f / 9.0f; // Default aspect ratio
+
+    // Get camera matrices
+    Engine::Math::Mat4 projection = camera.getProjectionMatrix(aspect);
+    Engine::Math::Mat4 view = camera.getViewMatrix();
+
+    // Setup render pass
+    Engine::Graphics::RenderPassDescriptor renderPassDesc;
+    renderPassDesc.colorTarget = nullptr;
+    renderPassDesc.depthTarget = depthBuffer;
+    renderPassDesc.colorLoadAction = Engine::Graphics::LoadAction::Clear;
+    renderPassDesc.colorStoreAction = Engine::Graphics::StoreAction::Store;
+    renderPassDesc.depthLoadAction = Engine::Graphics::LoadAction::Clear;
+    renderPassDesc.depthStoreAction = Engine::Graphics::StoreAction::DontCare;
+    renderPassDesc.clearValue.color = {0.0f, 0.1f, 0.3f, 1.0f}; // Dark blue background
+    renderPassDesc.clearValue.depth = 1.0f;
+
+    // Begin render pass
+    auto commandBuffer = device_->beginRenderPass(renderPassDesc);
+
+    // Set viewport
+    commandBuffer->setViewport(0, 0,
+        width_ > 0 ? width_ : 960,
+        height_ > 0 ? height_ : 600);
+
+    // Set pipeline
+    commandBuffer->setPipeline(pipeline_);
+
+    // Render all items
+    for (const auto& item : renderItems_) {
+        // Calculate matrices for this item
+        Engine::Math::Mat4 model = item.transform;
+        Engine::Math::Mat4 viewModel = Engine::Math::Matrix::multiply(view, model);
+        Engine::Math::Mat4 mvp = Engine::Math::Matrix::multiply(projection, viewModel);
+
+        // Update uniforms
         Uniforms uniforms = {
             .modelViewProjection = mvp,
             .model = model,
             .view = view,
             .projection = projection
         };
-        
-        memcpy(_uniformBuffer.contents, &uniforms, sizeof(uniforms));
-        [_uniformBuffer didModifyRange:NSMakeRange(0, sizeof(uniforms))];
-        
+
+        uniformBuffer_->update(&uniforms, sizeof(uniforms));
+
         // Set uniform buffer
-        [encoder setVertexBuffer:_uniformBuffer offset:0 atIndex:1];
-        
-        // Draw this cube
-        [encoder drawIndexedPrimitives:MTLPrimitiveTypeTriangle
-                            indexCount:_indexCount
-                             indexType:MTLIndexTypeUInt16
-                           indexBuffer:_indexBuffer
-                       indexBufferOffset:0];
+        commandBuffer->setUniformBuffer(uniformBuffer_, 1);
+
+        // Draw the mesh
+        item.mesh->draw(commandBuffer);
     }
-    
-    [encoder endEncoding];
-    
-    // Present drawable
-    [commandBuffer presentDrawable:drawable];
-    [commandBuffer commit];
-    
+
+    // End render pass
+    device_->endRenderPass(commandBuffer);
+
     // Debug output every 60 frames
-    if (_frameCount % 60 == 0) {
-        vector_float3 pos = camera.getPosition();
-        vector_float3 forward = camera.getForward();
-        
-        NSLog(@"🎯 Frame %d - Camera pos: (%.2f, %.2f, %.2f)", _frameCount, pos.x, pos.y, pos.z);
-        NSLog(@"👁️ Looking direction: (%.3f, %.3f, %.3f)", forward.x, forward.y, forward.z);
-        NSLog(@"📦 %d SOLID cubes at various positions", numCubes);
+    if (frameCount_ % 60 == 0) {
+        Engine::Math::Vec3 pos = camera.getPosition();
+        Engine::Math::Vec3 forward = camera.getForward();
+
+        printf("🎯 Frame %d - Camera pos: (%.2f, %.2f, %.2f)\n",
+               frameCount_, pos.x, pos.y, pos.z);
+        printf("👁️ Looking direction: (%.3f, %.3f, %.3f)\n",
+               forward.x, forward.y, forward.z);
+        printf("📦 Rendering %zu meshes\n", renderItems_.size());
     }
 }
 
-- (void)cleanup {
-    if (_isCleanedUp) return;
-    
-    NSLog(@"🧹 Cleaning up Metal resources...");
-    
-    _vertexBuffer = nil;
-    _indexBuffer = nil;
-    _uniformBuffer = nil;
-    _depthTexture = nil;
-    _pipelineState = nil;
-    _depthStencilState = nil;
-    _commandQueue = nil;
-    
-    _device = nil;
-    _layer = nil;
-    
-    _isCleanedUp = YES;
+void Renderer::endFrame() {
+    device_->endFrame();
 }
 
-- (void)dealloc {
-    [self cleanup];
-    NSLog(@"Renderer deallocated");
+void Renderer::addMesh(Engine::Graphics::MeshPtr mesh, const Engine::Math::Mat4& transform) {
+    if (mesh) {
+        renderItems_.push_back({mesh, transform});
+    }
 }
 
-@end
+void Renderer::clearScene() {
+    renderItems_.clear();
+}
+
+void Renderer::resize(uint32_t width, uint32_t height) {
+    width_ = width;
+    height_ = height;
+    device_->resizeBackBuffer(width, height);
+    printf("📏 Renderer resized to %dx%d\n", width, height);
+}

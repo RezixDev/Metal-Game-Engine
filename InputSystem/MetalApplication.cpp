@@ -2,7 +2,8 @@
 #include "MetalApplication.hpp"
 #include "Engine/Core/Time.hpp"
 #include <cmath>
-#include <cfloat>  // Add this for FLT_MAX
+#include <cfloat>
+#include "Engine/Camera.hpp"
 
 // macOS virtual key codes
 enum {
@@ -25,34 +26,16 @@ MetalApplication* getMetalApplication() {
     return g_metalApplication;
 }
 
-MetalApplication::MetalApplication() {
-    // Create camera with initial position and target
-    camera_ = new Engine::Camera(
-        Math::Vector::make(0.0f, 2.0f, 5.0f),  // position
-        Math::Vector::make(0.0f, 0.0f, 0.0f),  // target
-        Math::Vector::Constants::UP             // up vector
-    );
-}
+MetalApplication::MetalApplication()
+    : camera_(std::make_unique<Engine::Camera>(
+          Math::Vector::make(0.0f, 2.0f, 5.0f),
+          Math::Vector::make(0.0f, 0.0f, 0.0f),
+          Math::Vector::Constants::UP)) {}
 
 MetalApplication::~MetalApplication() {
-    delete camera_;
-    camera_ = nullptr;
-
     if (g_metalApplication == this) {
         g_metalApplication = nullptr;
     }
-}
-
-void MetalApplication::onInitialize() {
-    // Set up camera parameters
-    camera_->setFieldOfView(60.0f);
-    camera_->setNearPlane(0.1f);
-    camera_->setFarPlane(100.0f);
-    camera_->setMovementSpeed(moveSpeed_);
-    camera_->setMouseSensitivity(mouseSensitivity_);
-
-    // Set camera to FPS mode for first-person controls
-    camera_->setMovementType(Engine::CameraMovementType::FPS);
 }
 
 void MetalApplication::onUpdate(float deltaTime) {
