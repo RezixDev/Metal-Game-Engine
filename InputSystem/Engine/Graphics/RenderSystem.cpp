@@ -52,38 +52,9 @@ PipelinePtr RenderSystem::createBasicPipeline(const std::string& vs, const std::
 PipelinePtr RenderSystem::createColoredPipeline() {
     if (!device_) throw std::runtime_error("RenderSystem not initialized");
 
-    const std::string vertexShader = R"(
-#include <metal_stdlib>
-using namespace metal;
-
-struct VertexIn { float3 position [[attribute(0)]];
-                  float3 color    [[attribute(1)]]; };
-struct VertexOut { float4 position [[position]];
-                   float3 color; };
-
-struct Uniforms { float4x4 modelViewProjection; };
-
-vertex VertexOut vs_main(VertexIn in [[stage_in]],
-                         constant Uniforms& uniforms [[buffer(1)]]) {
-    VertexOut out;
-    out.position = uniforms.modelViewProjection * float4(in.position, 1.0);
-    out.color = in.color;
-    return out;
-}
-)";
-
-    const std::string fragmentShader = R"(
-#include <metal_stdlib>
-using namespace metal;
-struct VertexOut { float4 position [[position]];
-                   float3 color; };
-fragment float4 fs_main(VertexOut in [[stage_in]]) {
-    return float4(in.color, 1.0);
-}
-)";
-
-    auto vs = device_->createShader(ShaderStage::Vertex,   vertexShader,   "vs_main");
-    auto fs = device_->createShader(ShaderStage::Fragment, fragmentShader, "fs_main");
+    // CHANGE: Load from default Metal library instead of embedded strings
+    auto vs = device_->createShader(ShaderStage::Vertex, "", "vs_main");
+    auto fs = device_->createShader(ShaderStage::Fragment, "", "fs_main"); // Basic unlit version
 
     PipelineDescriptor d;
     d.vertexShader = vs;
@@ -98,40 +69,9 @@ fragment float4 fs_main(VertexOut in [[stage_in]]) {
 PipelinePtr RenderSystem::createTexturedPipeline() {
     if (!device_) throw std::runtime_error("RenderSystem not initialized");
 
-    const std::string vertexShader = R"(
-#include <metal_stdlib>
-using namespace metal;
-
-struct VertexIn { float3 position [[attribute(0)]];
-                  float2 texCoord [[attribute(1)]]; };
-struct VertexOut { float4 position [[position]];
-                   float2 texCoord; };
-
-struct Uniforms { float4x4 modelViewProjection; };
-
-vertex VertexOut vs_main(VertexIn in [[stage_in]],
-                         constant Uniforms& uniforms [[buffer(1)]]) {
-    VertexOut out;
-    out.position = uniforms.modelViewProjection * float4(in.position, 1.0);
-    out.texCoord = in.texCoord;
-    return out;
-}
-)";
-
-    const std::string fragmentShader = R"(
-#include <metal_stdlib>
-using namespace metal;
-struct VertexOut { float4 position [[position]];
-                   float2 texCoord; };
-fragment float4 fs_main(VertexOut in [[stage_in]],
-                        texture2d<float> colorTexture [[texture(0)]],
-                        sampler colorSampler [[sampler(0)]]) {
-    return colorTexture.sample(colorSampler, in.texCoord);
-}
-)";
-
-    auto vs = device_->createShader(ShaderStage::Vertex,   vertexShader,   "vs_main");
-    auto fs = device_->createShader(ShaderStage::Fragment, fragmentShader, "fs_main");
+    // CHANGE: Load from default Metal library
+    auto vs = device_->createShader(ShaderStage::Vertex, "", "vs_main");
+    auto fs = device_->createShader(ShaderStage::Fragment, "", "fs_textured"); // Add this to Shaders.metal
 
     PipelineDescriptor d;
     d.vertexShader = vs;

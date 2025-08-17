@@ -11,7 +11,7 @@
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
     // Create the main window programmatically
-    NSRect frame = NSMakeRect(0, 0, 960, 600);
+    NSRect frame = NSMakeRect(0, 0, 960, 800);
     NSWindowStyleMask styleMask = NSWindowStyleMaskTitled |
                                   NSWindowStyleMaskClosable |
                                   NSWindowStyleMaskResizable |

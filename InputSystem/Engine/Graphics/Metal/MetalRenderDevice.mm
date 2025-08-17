@@ -121,16 +121,28 @@ namespace Metal {
     // MetalShader Implementation
     // ========================================
 
-    MetalShader::MetalShader(id<MTLDevice> device, ShaderStage stage, const std::string& source, const std::string& name)
+     MetalShader::MetalShader(id<MTLDevice> device, ShaderStage stage, const std::string& source, const std::string& name)
         : stage_(stage), name_(name) {
 
+        id<MTLLibrary> library;
         NSError* error = nil;
-        id<MTLLibrary> library = [device newLibraryWithSource:[NSString stringWithUTF8String:source.c_str()]
-                                                      options:nil
-                                                        error:&error];
 
-        if (!library || error) {
-            throw std::runtime_error("Failed to compile shader: " + name);
+        if (source.empty()) {
+            // NEW: Load from default library (compiled .metal files)
+            library = [device newDefaultLibrary];
+            if (!library) {
+                throw std::runtime_error("Failed to load default Metal library. Ensure Shaders.metal is compiled in Xcode.");
+            }
+            printf("📚 Loading shader '%s' from default Metal library\n", name.c_str());
+        } else {
+            // EXISTING: Load from source string (keep this for compatibility)
+            library = [device newLibraryWithSource:[NSString stringWithUTF8String:source.c_str()]
+                                          options:nil
+                                            error:&error];
+            if (!library || error) {
+                throw std::runtime_error("Failed to compile shader: " + name);
+            }
+            printf("📚 Compiled shader '%s' from source string\n", name.c_str());
         }
 
         NSString* functionName = name.empty() ?
@@ -140,7 +152,7 @@ namespace Metal {
         function_ = [library newFunctionWithName:functionName];
 
         if (!function_) {
-            throw std::runtime_error("Failed to find shader function: " + name);
+            throw std::runtime_error("Failed to find shader function '" + name + "' in Metal library");
         }
     }
 

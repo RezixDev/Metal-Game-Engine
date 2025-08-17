@@ -74,7 +74,7 @@ void MetalApplication::setupScene() {
     printf("🎬 Setting up scene...\n");
 
     // Create various test meshes to demonstrate the system
-    
+
     // Central cube at origin
     auto cubeMesh = Engine::Graphics::GeometryBuilder::createCubeMesh(renderDevice_, 1.0f);
     sceneMeshes_.push_back(cubeMesh);
