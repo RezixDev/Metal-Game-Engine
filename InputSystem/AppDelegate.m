@@ -1,4 +1,4 @@
-//m
+//AppDelegate.m
 #import <AppKit/AppKit.h>
 #import "MyMetalView.h"
 

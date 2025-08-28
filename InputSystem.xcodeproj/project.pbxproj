@@ -25,28 +25,30 @@
 		AE5492672E48C80E00138CF2 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		AE8BF31C2E5266FE00E24C4E /* Exceptions for "InputSystem" folder in "InputSystem" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				MetalApplication.cpp,
+			);
+			target = AE3F5EEB2E47FD9F00C16CF3 /* InputSystem */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet section */
 		AE54926A2E48C83800138CF2 /* Exceptions for "InputSystem" folder in "Compile Sources" phase from "InputSystem" target */ = {
 			isa = PBXFileSystemSynchronizedGroupBuildPhaseMembershipExceptionSet;
 			buildPhase = AE3F5EE82E47FD9F00C16CF3 /* Sources */;
 			membershipExceptions = (
 				AppDelegate.h,
-				Engine/Application/Application.hpp,
-				Engine/Camera.hpp,
-				Engine/Core/Base/Logger.hpp,
 				Engine/Core/Base/Types.hpp,
 				Engine/Core/Engine.hpp,
 				Engine/Core/Events/EventSystem.hpp,
-				Engine/Core/Math.hpp,
 				Engine/Core/Memory/MemoryManager.hpp,
 				Engine/Core/Time.hpp,
 				Engine/Core/Transform.hpp,
 				Engine/Graphics/RenderSystem.hpp,
-				Engine/Scene/Scene.hpp,
-				GeometryBuilder.hpp,
-				InputManager.hpp,
 				MetalApplication.hpp,
-				MyMetalView.h,
 				Renderer.hpp,
 			);
 		};
@@ -56,6 +58,7 @@
 		AE3F5EEE2E47FD9F00C16CF3 /* InputSystem */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
+				AE8BF31C2E5266FE00E24C4E /* Exceptions for "InputSystem" folder in "InputSystem" target */,
 				AE54926A2E48C83800138CF2 /* Exceptions for "InputSystem" folder in "Compile Sources" phase from "InputSystem" target */,
 			);
 			path = InputSystem;

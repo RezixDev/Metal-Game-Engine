@@ -6,7 +6,7 @@
 #pragma once
 
 #include "../Base/Types.hpp"
-#include "../Base/Logger.hpp"
+
 #include <memory>
 #include <vector>
 #include <unordered_map>

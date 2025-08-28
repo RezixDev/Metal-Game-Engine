@@ -108,7 +108,7 @@ void MetalApplication::onUpdate(float deltaTime) {
         return;
     }
 
-    // Process camera movement based on input state
+    // Process camera movemenwt based on input state
     camera_->processMovement(
         deltaTime,
         inputState_.moveForward,
