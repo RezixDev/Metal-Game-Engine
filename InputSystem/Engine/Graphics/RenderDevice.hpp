@@ -2,7 +2,7 @@
 #pragma once
 
 #include "../Core/Math.hpp"
-#include "../Core/Base/Types.hpp"
+
 #include <memory>
 #include <vector>
 #include <string>

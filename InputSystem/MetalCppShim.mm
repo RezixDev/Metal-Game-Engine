@@ -5,7 +5,6 @@
 #include "Engine/Graphics/Metal/MetalRenderDevice.hpp"
 #include "Engine/Graphics/RenderSystem.hpp"
 
-#include "Engine/Core/Time.hpp"
 #include <cmath>
 #include <cstdio>
 

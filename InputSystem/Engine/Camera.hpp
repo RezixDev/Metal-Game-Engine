@@ -2,7 +2,7 @@
 // Enhanced Camera system with better architecture and features
 #pragma once
 
-#include "Math.hpp"
+
 #include "Transform.hpp"
 #include <cfloat>
 #include <cmath>

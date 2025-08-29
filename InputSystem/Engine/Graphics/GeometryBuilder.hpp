@@ -2,8 +2,6 @@
 // UPDATED VERSION - Modern geometry builder using the new graphics abstraction
 #pragma once
 
-#include "RenderDevice.hpp"
-#include "../Core/Math.hpp"
 #include <vector>
 
 namespace Engine {

@@ -42,9 +42,6 @@
 			membershipExceptions = (
 				AppDelegate.h,
 				Engine/Core/Base/Types.hpp,
-				Engine/Core/Engine.hpp,
-				Engine/Core/Events/EventSystem.hpp,
-				Engine/Core/Memory/MemoryManager.hpp,
 				Engine/Core/Time.hpp,
 				Engine/Core/Transform.hpp,
 				Engine/Graphics/RenderSystem.hpp,
