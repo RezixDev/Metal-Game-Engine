@@ -2,9 +2,6 @@
 // UPDATED VERSION - Clean application using graphics abstraction
 #pragma once
 
-#include "Engine/Camera.hpp"
-#include "Engine/Graphics/RenderDevice.hpp"
-#include "Engine/Graphics/GeometryBuilder.hpp"
 #include "Renderer.hpp"
 #include <memory>
 #include <vector>
