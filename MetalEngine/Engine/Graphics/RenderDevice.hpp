@@ -1,7 +1,7 @@
 // Engine/Graphics/RenderDevice.hpp
 #pragma once
 
-#include "../Core/Math.hpp"
+#include "../Math/Math.hpp"
 
 #include <memory>
 #include <vector>

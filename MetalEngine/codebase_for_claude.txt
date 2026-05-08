@@ -1,0 +1,5208 @@
+# Codebase Export for Claude
+Generated on: Sat Aug 30 08:47:33 CEST 2025
+
+## Project Structure
+InputSystem/
+├── .idea
+├── InputSystem
+│   ├── .idea
+│   ├── Assets.xcassets
+│   │   ├── AccentColor.colorset
+│   │   │   └── Contents.json
+│   │   ├── AppIcon.appiconset
+│   │   │   └── Contents.json
+│   │   └── Contents.json
+│   ├── Engine
+│   │   ├── Core
+│   │   │   ├── Math.hpp
+│   │   │   ├── Time.hpp
+│   │   │   └── Transform.hpp
+│   │   ├── Graphics
+│   │   │   ├── Metal
+│   │   │   │   ├── MetalRenderDevice.hpp
+│   │   │   │   └── MetalRenderDevice.mm
+│   │   │   ├── GeometryBuilder.hpp
+│   │   │   ├── RenderDevice.hpp
+│   │   │   ├── RenderSystem.cpp
+│   │   │   ├── RenderSystem.hpp
+│   │   │   └── VertexLayout.cpp
+│   │   └── Camera.hpp
+│   ├── AppDelegate.h
+│   ├── AppDelegate.m
+│   ├── MetalApplication.hpp
+│   ├── MetalCppShim.mm
+│   ├── MyMetalView.h
+│   ├── MyMetalView.mm
+│   ├── Renderer.hpp
+│   ├── Renderer.mm
+│   ├── Shaders.metal
+│   └── main.m
+├── InputSystem.xcodeproj
+│   ├── project.xcworkspace
+│   │   ├── xcshareddata
+│   │   │   └── swiftpm
+│   │   │       └── configuration
+│   │   ├── xcuserdata
+│   │   │   └── piotr.xcuserdatad
+│   ├── xcuserdata
+│   │   └── piotr.xcuserdatad
+│   │       ├── xcdebugger
+│   │       └── xcschemes
+├── metal-cpp
+│   ├── Foundation
+│   │   ├── Foundation.hpp
+│   │   ├── NSArray.hpp
+│   │   ├── NSAutoreleasePool.hpp
+│   │   ├── NSBundle.hpp
+│   │   ├── NSData.hpp
+│   │   ├── NSDate.hpp
+│   │   ├── NSDefines.hpp
+│   │   ├── NSDictionary.hpp
+│   │   ├── NSEnumerator.hpp
+│   │   ├── NSError.hpp
+│   │   ├── NSLock.hpp
+│   │   ├── NSNotification.hpp
+│   │   ├── NSNumber.hpp
+│   │   ├── NSObjCRuntime.hpp
+│   │   ├── NSObject.hpp
+│   │   ├── NSPrivate.hpp
+│   │   ├── NSProcessInfo.hpp
+│   │   ├── NSRange.hpp
+│   │   ├── NSSet.hpp
+│   │   ├── NSSharedPtr.hpp
+│   │   ├── NSString.hpp
+│   │   ├── NSTypes.hpp
+│   │   └── NSURL.hpp
+│   ├── Metal
+│   │   ├── MTLAccelerationStructure.hpp
+│   │   ├── MTLAccelerationStructureCommandEncoder.hpp
+│   │   ├── MTLAccelerationStructureTypes.hpp
+│   │   ├── MTLAllocation.hpp
+│   │   ├── MTLArgument.hpp
+│   │   ├── MTLArgumentEncoder.hpp
+│   │   ├── MTLBinaryArchive.hpp
+│   │   ├── MTLBlitCommandEncoder.hpp
+│   │   ├── MTLBlitPass.hpp
+│   │   ├── MTLBuffer.hpp
+│   │   ├── MTLCaptureManager.hpp
+│   │   ├── MTLCaptureScope.hpp
+│   │   ├── MTLCommandBuffer.hpp
+│   │   ├── MTLCommandEncoder.hpp
+│   │   ├── MTLCommandQueue.hpp
+│   │   ├── MTLComputeCommandEncoder.hpp
+│   │   ├── MTLComputePass.hpp
+│   │   ├── MTLComputePipeline.hpp
+│   │   ├── MTLCounters.hpp
+│   │   ├── MTLDefines.hpp
+│   │   ├── MTLDepthStencil.hpp
+│   │   ├── MTLDevice.hpp
+│   │   ├── MTLDrawable.hpp
+│   │   ├── MTLDynamicLibrary.hpp
+│   │   ├── MTLEvent.hpp
+│   │   ├── MTLFence.hpp
+│   │   ├── MTLFunctionConstantValues.hpp
+│   │   ├── MTLFunctionDescriptor.hpp
+│   │   ├── MTLFunctionHandle.hpp
+│   │   ├── MTLFunctionLog.hpp
+│   │   ├── MTLFunctionStitching.hpp
+│   │   ├── MTLHeaderBridge.hpp
+│   │   ├── MTLHeap.hpp
+│   │   ├── MTLIOCommandBuffer.hpp
+│   │   ├── MTLIOCommandQueue.hpp
+│   │   ├── MTLIOCompressor.hpp
+│   │   ├── MTLIndirectCommandBuffer.hpp
+│   │   ├── MTLIndirectCommandEncoder.hpp
+│   │   ├── MTLIntersectionFunctionTable.hpp
+│   │   ├── MTLLibrary.hpp
+│   │   ├── MTLLinkedFunctions.hpp
+│   │   ├── MTLLogState.hpp
+│   │   ├── MTLParallelRenderCommandEncoder.hpp
+│   │   ├── MTLPipeline.hpp
+│   │   ├── MTLPixelFormat.hpp
+│   │   ├── MTLPrivate.hpp
+│   │   ├── MTLRasterizationRate.hpp
+│   │   ├── MTLRenderCommandEncoder.hpp
+│   │   ├── MTLRenderPass.hpp
+│   │   ├── MTLRenderPipeline.hpp
+│   │   ├── MTLResidencySet.hpp
+│   │   ├── MTLResource.hpp
+│   │   ├── MTLResourceStateCommandEncoder.hpp
+│   │   ├── MTLResourceStatePass.hpp
+│   │   ├── MTLSampler.hpp
+│   │   ├── MTLStageInputOutputDescriptor.hpp
+│   │   ├── MTLTexture.hpp
+│   │   ├── MTLTypes.hpp
+│   │   ├── MTLVersion.hpp
+│   │   ├── MTLVertexDescriptor.hpp
+│   │   ├── MTLVisibleFunctionTable.hpp
+│   │   └── Metal.hpp
+│   ├── MetalFX
+│   │   ├── MTLFXDefines.hpp
+│   │   ├── MTLFXPrivate.hpp
+│   │   ├── MTLFXSpatialScaler.hpp
+│   │   ├── MTLFXTemporalScaler.hpp
+│   │   └── MetalFX.hpp
+│   ├── QuartzCore
+│   │   ├── CADefines.hpp
+│   │   ├── CAMetalDrawable.hpp
+│   │   ├── CAMetalLayer.hpp
+│   │   ├── CAPrivate.hpp
+│   │   └── QuartzCore.hpp
+│   ├── SingleHeader
+│   │   └── MakeSingleHeader.py
+│   └── README.md
+└── InputManager_backup.hpp
+
+## Project Files
+
+
+## File: ./main.m
+//main.m
+#import <AppKit/AppKit.h>
+#import "AppDelegate.h"
+
+int main(int argc, const char * argv[]) {
+    @autoreleasepool {
+        NSApplication *app = [NSApplication sharedApplication];
+        AppDelegate *delegate = [[AppDelegate alloc] init];
+        [app setDelegate:delegate];
+
+        [app run];
+    }
+    return 0;
+}
+
+
+
+## File: ./AppDelegate.m
+//AppDelegate.m
+#import <AppKit/AppKit.h>
+#import "MyMetalView.h"
+
+@interface AppDelegate : NSObject <NSApplicationDelegate>
+@property (strong) NSWindow *window;
+@property (strong) MyMetalView *metalView;
+@end
+
+@implementation AppDelegate
+
+- (void)applicationDidFinishLaunching:(NSNotification *)notification {
+    // Create the main window programmatically
+    NSRect frame = NSMakeRect(0, 0, 960, 800);
+    NSWindowStyleMask styleMask = NSWindowStyleMaskTitled |
+                                  NSWindowStyleMaskClosable |
+                                  NSWindowStyleMaskResizable |
+                                  NSWindowStyleMaskMiniaturizable;
+    
+    self.window = [[NSWindow alloc] initWithContentRect:frame
+                                               styleMask:styleMask
+                                                 backing:NSBackingStoreBuffered
+                                                   defer:NO];
+    
+    // Configure window
+    self.window.title = @"Metal + AppKit + WASD";
+    [self.window center];
+    self.window.minSize = NSMakeSize(400, 300);
+
+    // Create and setup Metal view
+    NSRect viewFrame = ((NSView*)self.window.contentView).bounds;
+    self.metalView = [[MyMetalView alloc] initWithFrame:viewFrame];
+    self.metalView.autoresizingMask = NSViewWidthSizable | NSViewHeightSizable;
+    
+    // Set as content view
+    self.window.contentView = self.metalView;
+    
+    // Show window and make it key
+    [self.window makeKeyAndOrderFront:nil];
+    [self.window makeFirstResponder:self.metalView];
+
+    NSLog(@"Application launched - single window created");
+}
+
+- (void)applicationWillTerminate:(NSNotification *)notification {
+    NSLog(@"Application terminating");
+
+}
+
+- (BOOL)applicationShouldTerminateAfterLastWindowClosed:(NSApplication *)sender {
+    return YES;
+}
+
+@end
+
+
+
+## File: ./MetalCppShim.mm
+// MetalCppShim.mm
+#import <Metal/Metal.h>
+#import <QuartzCore/CAMetalLayer.h>
+#include "MetalApplication.hpp"
+#include "Engine/Graphics/Metal/MetalRenderDevice.hpp"
+#include "Engine/Graphics/RenderSystem.hpp"
+
+#include <cmath>
+#include <cstdio>
+
+// macOS virtual key codes
+enum {
+    kVK_ANSI_W = 0x0D,
+    kVK_ANSI_A = 0x00,
+    kVK_ANSI_S = 0x01,
+    kVK_ANSI_D = 0x02,
+    kVK_ANSI_Q = 0x0C,
+    kVK_ANSI_R = 0x0F,
+    kVK_Space = 0x31
+};
+
+// Singleton instance
+static std::unique_ptr<MetalApplication> g_metalApplication = nullptr;
+
+MetalApplication* getMetalApplication() {
+    if (!g_metalApplication) {
+        g_metalApplication = std::make_unique<MetalApplication>();
+    }
+    return g_metalApplication.get();
+}
+
+MetalApplication::MetalApplication() {
+    printf("🚀 Creating MetalApplication with modern architecture\n");
+
+    // Create camera with initial position and target
+    camera_ = std::make_unique<Engine::Camera>(
+        Engine::Math::Vector::make(0.0f, 2.0f, 5.0f),  // position
+        Engine::Math::Vector::make(0.0f, 0.0f, 0.0f),  // target
+        Engine::Math::Vector::Constants::UP              // up vector
+    );
+
+    printf("✅ MetalApplication created\n");
+}
+
+MetalApplication::~MetalApplication() {
+    onShutdown();
+    printf("🧹 MetalApplication destroyed\n");
+}
+
+void MetalApplication::onInitialize(Engine::Graphics::RenderDevicePtr device) {
+    if (isInitialized_) return;
+    renderDevice_ = std::move(device);
+    Engine::Graphics::RenderSystem::getInstance().initialize(renderDevice_);
+    renderer_ = std::make_unique<Renderer>(renderDevice_);
+    camera_->setFieldOfView(60.0f);
+    camera_->setNearPlane(0.1f);
+    camera_->setFarPlane(100.0f);
+    camera_->setMovementSpeed(moveSpeed_);
+    camera_->setMouseSensitivity(mouseSensitivity_);
+    camera_->setMovementType(Engine::CameraMovementType::FPS);
+    setupScene();
+    isInitialized_ = true;
+}
+
+// bridge you call from Cocoa:
+extern "C" void AppInitWithMetal(id<MTLDevice> device, CAMetalLayer* layer) {
+    auto* app = getMetalApplication();
+    auto rd = Engine::Graphics::Metal::createMetalRenderDevice(device, layer);
+    app->onInitialize(std::move(rd));
+}
+
+void MetalApplication::setupScene() {
+    printf("🎬 Setting up scene...\n");
+
+    // Create various test meshes to demonstrate the system
+
+    // Central cube at origin
+    auto cubeMesh = Engine::Graphics::GeometryBuilder::createCubeMesh(renderDevice_, 1.0f);
+    sceneMeshes_.push_back(cubeMesh);
+
+    // Create additional cubes at different positions
+    auto rightCube = Engine::Graphics::GeometryBuilder::createCubeMesh(renderDevice_, 0.8f);
+    sceneMeshes_.push_back(rightCube);
+
+    auto leftCube = Engine::Graphics::GeometryBuilder::createCubeMesh(renderDevice_, 0.8f);
+    sceneMeshes_.push_back(leftCube);
+
+    auto topCube = Engine::Graphics::GeometryBuilder::createCubeMesh(renderDevice_, 0.8f);
+    sceneMeshes_.push_back(topCube);
+
+    auto bottomCube = Engine::Graphics::GeometryBuilder::createCubeMesh(renderDevice_, 0.8f);
+    sceneMeshes_.push_back(bottomCube);
+
+    // Create a sphere for variety
+    auto sphereMesh = Engine::Graphics::GeometryBuilder::createSphereMesh(renderDevice_, 0.7f, 16, 12);
+    sceneMeshes_.push_back(sphereMesh);
+
+    // Create a ground plane
+    auto planeMesh = Engine::Graphics::GeometryBuilder::createPlaneMesh(renderDevice_, 20.0f, 20.0f, 1);
+    sceneMeshes_.push_back(planeMesh);
+
+    printf("✅ Scene setup complete: %zu meshes created\n", sceneMeshes_.size());
+}
+
+void MetalApplication::onUpdate(float deltaTime) {
+    if (!isInitialized_) {
+        return;
+    }
+
+    // Process camera movemenwt based on input state
+    camera_->processMovement(
+        deltaTime,
+        inputState_.moveForward,
+        inputState_.moveBackward,
+        inputState_.moveLeft,
+        inputState_.moveRight,
+        inputState_.moveUp,
+        inputState_.moveDown
+    );
+}
+
+void MetalApplication::onRender() {
+    if (!isInitialized_ || !renderer_) {
+        return;
+    }
+
+    try {
+        // Begin frame
+        renderer_->beginFrame();
+
+        // Clear previous frame's render items
+        renderer_->clearScene();
+
+        // Add all scene objects with their transforms
+        Engine::Math::Mat4 identity = Engine::Math::Matrix::identity();
+
+        // Central cube (red from GeometryBuilder colors)
+        renderer_->addMesh(sceneMeshes_[0], identity);
+
+        // Right cube
+        Engine::Math::Mat4 rightTransform = Engine::Math::Matrix::translation(30.0f, 0.0f, 0.0f);
+
+        renderer_->addMesh(sceneMeshes_[1], rightTransform);
+
+        // Left cube
+        Engine::Math::Mat4 leftTransform = Engine::Math::Matrix::translation(-3.0f, 0.0f, 0.0f);
+        renderer_->addMesh(sceneMeshes_[2], leftTransform);
+
+        // Top cube
+        Engine::Math::Mat4 topTransform = Engine::Math::Matrix::translation(0.0f, 3.0f, 0.0f);
+        renderer_->addMesh(sceneMeshes_[3], topTransform);
+
+        // Bottom cube
+        Engine::Math::Mat4 bottomTransform = Engine::Math::Matrix::translation(0.0f, -3.0f, 0.0f);
+        renderer_->addMesh(sceneMeshes_[4], bottomTransform);
+
+        // Sphere at forward position
+        Engine::Math::Mat4 sphereTransform = Engine::Math::Matrix::translation(0.0f, 0.0f, -5.0f);
+        renderer_->addMesh(sceneMeshes_[5], sphereTransform);
+
+        // Ground plane
+        Engine::Math::Mat4 planeTransform = Engine::Math::Matrix::translation(-5.0f, -5.0f, -5.0f);
+        renderer_->addMesh(sceneMeshes_[6], planeTransform);
+
+        // Render the scene
+        renderer_->render(*camera_);
+
+        // End frame
+        renderer_->endFrame();
+
+    } catch (const std::exception& e) {
+        printf("❌ Render error: %s\n", e.what());
+    }
+}
+
+void MetalApplication::onResize(int width, int height) {
+    if (!isInitialized_ || !renderer_) {
+        return;
+    }
+
+    printf("📏 Application resize: %dx%d\n", width, height);
+    renderer_->resize(static_cast<uint32_t>(width), static_cast<uint32_t>(height));
+}
+
+void MetalApplication::onShutdown() {
+    if (!isInitialized_) {
+        return;
+    }
+
+    printf("🛑 Shutting down MetalApplication...\n");
+
+    // Clear scene meshes
+    sceneMeshes_.clear();
+
+    // Clean up renderer
+    renderer_.reset();
+
+    // Shutdown render system
+    Engine::Graphics::RenderSystem::getInstance().shutdown();
+
+    // Clean up render device
+    renderDevice_.reset();
+
+    isInitialized_ = false;
+    printf("✅ MetalApplication shutdown complete\n");
+}
+
+void MetalApplication::processKeyDown(unsigned short keyCode) {
+    switch (keyCode) {
+        case kVK_ANSI_W:
+            inputState_.moveForward = true;
+            break;
+        case kVK_ANSI_S:
+            inputState_.moveBackward = true;
+            break;
+        case kVK_ANSI_A:
+            inputState_.moveLeft = true;
+            break;
+        case kVK_ANSI_D:
+            inputState_.moveRight = true;
+            break;
+        case kVK_Space:
+            inputState_.moveUp = true;
+            break;
+        case kVK_ANSI_Q:
+            inputState_.moveDown = true;
+            break;
+        case kVK_ANSI_R:
+            // Reset camera to initial position
+            printf("🔄 Resetting camera position\n");
+            camera_->lookAt(
+                Engine::Math::Vector::make(0.0f, 1.0f, 5.0f),  // position
+                Engine::Math::Vector::make(0.0f, 0.0f, 0.0f),  // target
+                Engine::Math::Vector::Constants::UP             // up
+            );
+            break;
+    }
+}
+
+void MetalApplication::processKeyUp(unsigned short keyCode) {
+    switch (keyCode) {
+        case kVK_ANSI_W:
+            inputState_.moveForward = false;
+            break;
+        case kVK_ANSI_S:
+            inputState_.moveBackward = false;
+            break;
+        case kVK_ANSI_A:
+            inputState_.moveLeft = false;
+            break;
+        case kVK_ANSI_D:
+            inputState_.moveRight = false;
+            break;
+        case kVK_Space:
+            inputState_.moveUp = false;
+            break;
+        case kVK_ANSI_Q:
+            inputState_.moveDown = false;
+            break;
+    }
+}
+
+void MetalApplication::processMouseMove(float deltaX, float deltaY) {
+    if (!inputState_.mouseLookEnabled || !isInitialized_) {
+        return;
+    }
+
+    camera_->processMouseMovement(deltaX, deltaY);
+}
+
+void MetalApplication::setMouseLook(bool enabled) {
+    inputState_.mouseLookEnabled = enabled;
+    if (enabled) {
+        printf("🖱️ Mouse look enabled\n");
+    } else {
+        printf("🖱️ Mouse look disabled\n");
+    }
+}
+
+
+
+## File: ./MyMetalView.mm
+// MyMetalView.mm
+// UPDATED VERSION - Clean integration with modern graphics abstraction
+#import "MyMetalView.h"
+#import <QuartzCore/CAMetalLayer.h>
+#import <Metal/Metal.h>
+
+// Include the updated application
+#import "MetalApplication.hpp"
+#import "Engine/Core/Time.hpp"
+extern "C" void AppInitWithMetal(id<MTLDevice> device, CAMetalLayer* layer);
+
+@implementation MyMetalView {
+    CAMetalLayer* _metalLayer;
+    id<MTLDevice> _device;
+    dispatch_source_t _renderTimer;
+
+    // Application integration
+    MetalApplication* _application;
+
+    // Mouse tracking
+    NSPoint _lastMouseLocation;
+    BOOL _firstMouseMove;
+}
+
++ (Class)layerClass { return [CAMetalLayer class]; }
+
+- (instancetype)initWithFrame:(NSRect)frame {
+    self = [super initWithFrame:frame];
+    if (!self) return self;
+
+    NSLog(@"🚀 Starting MyMetalView initialization with clean architecture...");
+
+    // Initialize Metal
+    _device = MTLCreateSystemDefaultDevice();
+    if (!_device) {
+        NSLog(@"❌ Failed to create Metal device");
+        return nil;
+    }
+    NSLog(@"✅ Metal device created: %@", _device.name);
+
+    // Setup Metal layer
+    _metalLayer = [CAMetalLayer layer];
+    _metalLayer.device = _device;
+    _metalLayer.pixelFormat = MTLPixelFormatBGRA8Unorm;
+    _metalLayer.framebufferOnly = YES;
+    _metalLayer.contentsScale = [NSScreen mainScreen].backingScaleFactor;
+    _metalLayer.displaySyncEnabled = YES;
+
+    self.layer = _metalLayer;
+    self.wantsLayer = YES;
+
+    CGSize px = CGSizeMake(frame.size.width * _metalLayer.contentsScale,
+                              frame.size.height * _metalLayer.contentsScale);
+       _metalLayer.drawableSize = px;
+    
+    // Initialize application with the clean architecture
+    _application = getMetalApplication();
+
+    try {
+        AppInitWithMetal(_device, _metalLayer);
+    } catch (const std::exception& e) {
+        NSLog(@"❌ Failed to initialize application: %s", e.what());
+        return nil;
+    }
+
+    // Initialize time system
+    Engine::Core::Time::getInstance().initialize();
+
+    _firstMouseMove = YES;
+
+    // Create render timer for 60 FPS
+    [self setupRenderTimer:60.0];
+
+    NSLog(@"✅ MyMetalView initialization complete with clean architecture");
+    NSLog(@"📦 Using modern graphics abstraction with automatic resource management");
+    NSLog(@"🎮 Controls: WASD=move, Space=up, Q=down, R=reset, Right-click+drag=look");
+
+    return self;
+}
+
+- (void)setupRenderTimer:(double)targetFPS {
+    uint64_t intervalNanos = (uint64_t)(1.0 / targetFPS * NSEC_PER_SEC);
+
+    dispatch_queue_t queue = dispatch_queue_create("com.metal.renderqueue", DISPATCH_QUEUE_SERIAL);
+    _renderTimer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, queue);
+
+    dispatch_source_set_timer(_renderTimer,
+                             dispatch_time(DISPATCH_TIME_NOW, 0),
+                             intervalNanos,
+                             intervalNanos / 10);
+
+    __weak typeof(self) weakSelf = self;
+    dispatch_source_set_event_handler(_renderTimer, ^{
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [weakSelf renderFrame];
+        });
+    });
+
+    dispatch_resume(_renderTimer);
+}
+
+- (void)renderFrame {
+    // Update time system
+    Engine::Core::Time::getInstance().update();
+    float deltaTime = Engine::Core::Time::getInstance().getDeltaTime();
+
+    // Update application
+    _application->onUpdate(deltaTime);
+
+    // Render the scene
+    _application->onRender();
+
+    // Debug output every 60 frames
+    static int frameCounter = 0;
+    if (++frameCounter >= 60) {
+        frameCounter = 0;
+        float fps = Engine::Core::Time::getInstance().getFPS();
+        auto& inputState = _application->getInputState();
+
+        NSLog(@"📊 FPS: %.1f | Frame: %llu | Time: %.2f",
+              fps,
+              Engine::Core::Time::getInstance().getFrameCount(),
+              Engine::Core::Time::getInstance().getTime());
+
+        if (inputState.moveForward || inputState.moveBackward ||
+            inputState.moveLeft || inputState.moveRight) {
+            auto camera = _application->getCamera();
+            if (camera) {
+                vector_float3 pos = camera->getPosition();
+                NSLog(@"📍 Camera pos: (%.2f, %.2f, %.2f)", pos.x, pos.y, pos.z);
+            }
+        }
+    }
+}
+
+- (BOOL)acceptsFirstResponder {
+    return YES;
+}
+
+- (BOOL)becomeFirstResponder {
+    return [super becomeFirstResponder];
+}
+
+- (BOOL)canBecomeKeyView {
+    return YES;
+}
+
+- (void)viewDidMoveToWindow {
+    [super viewDidMoveToWindow];
+    if (self.window) {
+        [self.window makeFirstResponder:self];
+        NSLog(@"🖼️ View added to window, set as first responder");
+    }
+}
+
+// ========================================
+// Input Handling - Delegated to Application
+// ========================================
+
+- (void)keyDown:(NSEvent *)event {
+    _application->processKeyDown(event.keyCode);
+}
+
+- (void)keyUp:(NSEvent *)event {
+    _application->processKeyUp(event.keyCode);
+}
+
+- (void)mouseDown:(NSEvent *)event {
+    [self.window makeFirstResponder:self];
+
+    if (event.buttonNumber == 1) { // Right mouse button
+        _application->setMouseLook(YES);
+        _firstMouseMove = YES;
+        _lastMouseLocation = [self convertPoint:event.locationInWindow fromView:nil];
+        NSLog(@"🖱️ Mouse look enabled");
+    }
+}
+
+- (void)mouseUp:(NSEvent *)event {
+    if (event.buttonNumber == 1) { // Right mouse button
+        _application->setMouseLook(NO);
+        NSLog(@"🖱️ Mouse look disabled");
+    }
+}
+
+- (void)mouseDragged:(NSEvent *)event {
+    if (_application->getInputState().mouseLookEnabled && event.buttonNumber == 1) {
+        NSPoint currentLocation = [self convertPoint:event.locationInWindow fromView:nil];
+
+        if (!_firstMouseMove) {
+            float deltaX = currentLocation.x - _lastMouseLocation.x;
+            float deltaY = currentLocation.y - _lastMouseLocation.y;
+
+            _application->processMouseMove(deltaX, deltaY);
+        } else {
+            _firstMouseMove = NO;
+        }
+
+        _lastMouseLocation = currentLocation;
+    }
+}
+
+- (void)rightMouseDown:(NSEvent *)event {
+    [self mouseDown:event];
+}
+
+- (void)rightMouseUp:(NSEvent *)event {
+    [self mouseUp:event];
+}
+
+- (void)rightMouseDragged:(NSEvent *)event {
+    [self mouseDragged:event];
+}
+
+- (void)resizeSubviewsWithOldSize:(NSSize)oldSize {
+    [super resizeSubviewsWithOldSize:oldSize];
+
+    CGSize newSize = CGSizeMake(self.bounds.size.width * self.window.backingScaleFactor,
+                                self.bounds.size.height * self.window.backingScaleFactor);
+    _metalLayer.drawableSize = newSize;
+
+    // Notify application of resize
+    _application->onResize(newSize.width, newSize.height);
+}
+
+- (void)viewWillMoveToWindow:(NSWindow *)newWindow {
+    if (newWindow == nil) {
+        [self cleanup];
+    }
+    [super viewWillMoveToWindow:newWindow];
+}
+
+- (void)cleanup {
+    if (_renderTimer) {
+        dispatch_source_cancel(_renderTimer);
+        _renderTimer = nil;
+    }
+
+    // Clean up application
+    if (_application) {
+        _application->onShutdown();
+        _application = nullptr;
+    }
+
+    _metalLayer = nil;
+    _device = nil;
+
+    NSLog(@"🧹 MyMetalView cleaned up");
+}
+
+- (void)dealloc {
+    [self cleanup];
+}
+
+@end
+
+
+
+## File: ./Engine/Graphics/Metal/MetalRenderDevice.mm
+// Engine/Graphics/Metal/MetalRenderDevice.mm
+// NEW FILE - Metal implementation file
+#include "MetalRenderDevice.hpp"
+#include <stdexcept>
+#include <cstring>
+
+namespace Engine {
+namespace Graphics {
+namespace Metal {
+
+    // ========================================
+    // MetalBuffer Implementation
+    // ========================================
+
+    MetalBuffer::MetalBuffer(id<MTLDevice> device, BufferType type, BufferUsage usage, size_t size, const void* data)
+        : type_(type), usage_(usage), size_(size), isMapped_(false) {
+
+        MTLResourceOptions options = MTLResourceStorageModeManaged;
+
+        if (data) {
+            buffer_ = [device newBufferWithBytes:data length:size options:options];
+        } else {
+            buffer_ = [device newBufferWithLength:size options:options];
+        }
+
+        if (!buffer_) {
+            throw std::runtime_error("Failed to create Metal buffer");
+        }
+    }
+
+    void* MetalBuffer::map() {
+        if (isMapped_) {
+            throw std::runtime_error("Buffer is already mapped");
+        }
+        isMapped_ = true;
+        return buffer_.contents;
+    }
+
+    void MetalBuffer::unmap() {
+        if (!isMapped_) {
+            throw std::runtime_error("Buffer is not mapped");
+        }
+        [buffer_ didModifyRange:NSMakeRange(0, size_)];
+        isMapped_ = false;
+    }
+
+    void MetalBuffer::update(const void* data, size_t size, size_t offset) {
+        if (offset + size > size_) {
+            throw std::runtime_error("Buffer update out of bounds");
+        }
+
+        std::memcpy(static_cast<char*>(buffer_.contents) + offset, data, size);
+        [buffer_ didModifyRange:NSMakeRange(offset, size)];
+    }
+
+    // ========================================
+    // MetalTexture Implementation
+    // ========================================
+
+    MetalTexture::MetalTexture(id<MTLDevice> device, uint32_t width, uint32_t height, TextureFormat format, TextureUsage usage, const void* data)
+        : width_(width), height_(height), format_(format), usage_(usage) {
+
+        MTLTextureDescriptor* descriptor = [MTLTextureDescriptor texture2DDescriptorWithPixelFormat:toMetalFormat(format)
+                                                                                                width:width
+                                                                                               height:height
+                                                                                            mipmapped:NO];
+
+        switch (usage) {
+            case TextureUsage::ShaderRead:
+                descriptor.usage = MTLTextureUsageShaderRead;
+                break;
+            case TextureUsage::RenderTarget:
+                descriptor.usage = MTLTextureUsageRenderTarget | MTLTextureUsageShaderRead;
+                break;
+            case TextureUsage::DepthStencil:
+                descriptor.usage = MTLTextureUsageRenderTarget;
+                descriptor.storageMode = MTLStorageModePrivate;
+                break;
+        }
+
+        texture_ = [device newTextureWithDescriptor:descriptor];
+
+        if (!texture_) {
+            throw std::runtime_error("Failed to create Metal texture");
+        }
+
+        if (data && usage != TextureUsage::DepthStencil) {
+            update(data, width * height * 4); // Assuming 4 bytes per pixel for now
+        }
+    }
+
+    void MetalTexture::update(const void* data, size_t size) {
+        if (!data || usage_ == TextureUsage::DepthStencil) {
+            return;
+        }
+
+        MTLRegion region = MTLRegionMake2D(0, 0, width_, height_);
+        NSUInteger bytesPerRow = width_ * 4; // Assuming 4 bytes per pixel
+
+        [texture_ replaceRegion:region
+                    mipmapLevel:0
+                      withBytes:data
+                    bytesPerRow:bytesPerRow];
+    }
+
+    MTLPixelFormat MetalTexture::toMetalFormat(TextureFormat format) {
+        switch (format) {
+            case TextureFormat::RGBA8: return MTLPixelFormatRGBA8Unorm;
+            case TextureFormat::BGRA8: return MTLPixelFormatBGRA8Unorm;
+            case TextureFormat::RGB8: return MTLPixelFormatRGBA8Unorm; // Metal doesn't support RGB8 directly
+            case TextureFormat::R8: return MTLPixelFormatR8Unorm;
+            case TextureFormat::RGBA16F: return MTLPixelFormatRGBA16Float;
+            case TextureFormat::RGBA32F: return MTLPixelFormatRGBA32Float;
+            case TextureFormat::Depth32Float: return MTLPixelFormatDepth32Float;
+            case TextureFormat::Depth24Stencil8: return MTLPixelFormatDepth24Unorm_Stencil8;
+            default: return MTLPixelFormatRGBA8Unorm;
+        }
+    }
+
+    // ========================================
+    // MetalShader Implementation
+    // ========================================
+
+     MetalShader::MetalShader(id<MTLDevice> device, ShaderStage stage, const std::string& source, const std::string& name)
+        : stage_(stage), name_(name) {
+
+        id<MTLLibrary> library;
+        NSError* error = nil;
+
+        if (source.empty()) {
+            // NEW: Load from default library (compiled .metal files)
+            library = [device newDefaultLibrary];
+            if (!library) {
+                throw std::runtime_error("Failed to load default Metal library. Ensure Shaders.metal is compiled in Xcode.");
+            }
+            printf("📚 Loading shader '%s' from default Metal library\n", name.c_str());
+        } else {
+            // EXISTING: Load from source string (keep this for compatibility)
+            library = [device newLibraryWithSource:[NSString stringWithUTF8String:source.c_str()]
+                                          options:nil
+                                            error:&error];
+            if (!library || error) {
+                throw std::runtime_error("Failed to compile shader: " + name);
+            }
+            printf("📚 Compiled shader '%s' from source string\n", name.c_str());
+        }
+
+        NSString* functionName = name.empty() ?
+            (stage == ShaderStage::Vertex ? @"vs_main" : @"fs_main") :
+            [NSString stringWithUTF8String:name.c_str()];
+
+        function_ = [library newFunctionWithName:functionName];
+
+        if (!function_) {
+            throw std::runtime_error("Failed to find shader function '" + name + "' in Metal library");
+        }
+    }
+
+    // ========================================
+    // MetalPipeline Implementation
+    // ========================================
+
+    MetalPipeline::MetalPipeline(id<MTLDevice> device, const PipelineDescriptor& descriptor)
+        : descriptor_(descriptor) {
+
+        MTLRenderPipelineDescriptor* pipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
+
+        // Set shaders
+        auto vertexShader = std::static_pointer_cast<MetalShader>(descriptor.vertexShader);
+        auto fragmentShader = std::static_pointer_cast<MetalShader>(descriptor.fragmentShader);
+
+        pipelineDescriptor.vertexFunction = vertexShader->getMetalFunction();
+        pipelineDescriptor.fragmentFunction = fragmentShader->getMetalFunction();
+
+        // Set vertex descriptor
+        pipelineDescriptor.vertexDescriptor = createMetalVertexDescriptor(descriptor.vertexLayout);
+
+        // Set color attachments
+        for (size_t i = 0; i < descriptor.colorFormats.size(); ++i) {
+            pipelineDescriptor.colorAttachments[i].pixelFormat = MetalTexture::toMetalFormat(descriptor.colorFormats[i]);
+        }
+
+        // Set depth format
+        pipelineDescriptor.depthAttachmentPixelFormat = MetalTexture::toMetalFormat(descriptor.depthFormat);
+
+        // Create pipeline state
+        NSError* error = nil;
+        renderPipelineState_ = [device newRenderPipelineStateWithDescriptor:pipelineDescriptor error:&error];
+
+        if (!renderPipelineState_ || error) {
+            throw std::runtime_error("Failed to create render pipeline state");
+        }
+
+        // Create depth stencil state
+        MTLDepthStencilDescriptor* depthDescriptor = [[MTLDepthStencilDescriptor alloc] init];
+        depthDescriptor.depthCompareFunction = MTLCompareFunctionLess;
+        depthDescriptor.depthWriteEnabled = descriptor.renderState.depthWriteEnabled;
+
+        depthStencilState_ = [device newDepthStencilStateWithDescriptor:depthDescriptor];
+    }
+
+    MTLVertexDescriptor* MetalPipeline::createMetalVertexDescriptor(const VertexLayout& layout) {
+        MTLVertexDescriptor* vertexDescriptor = [[MTLVertexDescriptor alloc] init];
+
+        for (size_t i = 0; i < layout.attributes.size(); ++i) {
+            const auto& attr = layout.attributes[i];
+
+            MTLVertexFormat format;
+            switch (attr.format) {
+                case VertexFormat::Float: format = MTLVertexFormatFloat; break;
+                case VertexFormat::Float2: format = MTLVertexFormatFloat2; break;
+                case VertexFormat::Float3: format = MTLVertexFormatFloat3; break;
+                case VertexFormat::Float4: format = MTLVertexFormatFloat4; break;
+                case VertexFormat::UInt: format = MTLVertexFormatUInt; break;
+                case VertexFormat::UInt2: format = MTLVertexFormatUInt2; break;
+                case VertexFormat::UInt3: format = MTLVertexFormatUInt3; break;
+                case VertexFormat::UInt4: format = MTLVertexFormatUInt4; break;
+                default: format = MTLVertexFormatFloat3; break;
+            }
+
+            vertexDescriptor.attributes[i].format = format;
+            vertexDescriptor.attributes[i].offset = attr.offset;
+            vertexDescriptor.attributes[i].bufferIndex = attr.bufferIndex;
+        }
+
+        vertexDescriptor.layouts[0].stride = layout.stride;
+        vertexDescriptor.layouts[0].stepRate = 1;
+        vertexDescriptor.layouts[0].stepFunction = MTLVertexStepFunctionPerVertex;
+
+        return vertexDescriptor;
+    }
+
+    // ========================================
+    // MetalCommandBuffer Implementation
+    // ========================================
+
+    MetalCommandBuffer::MetalCommandBuffer(id<MTLCommandBuffer> commandBuffer, id<MTLRenderCommandEncoder> encoder)
+        : commandBuffer_(commandBuffer), encoder_(encoder), indexBuffer_(nil) {
+    }
+
+    void MetalCommandBuffer::setViewport(int x, int y, int width, int height) {
+        MTLViewport viewport = {
+            .originX = static_cast<double>(x),
+            .originY = static_cast<double>(y),
+            .width = static_cast<double>(width),
+            .height = static_cast<double>(height),
+            .znear = 0.0,
+            .zfar = 1.0
+        };
+        [encoder_ setViewport:viewport];
+    }
+
+    void MetalCommandBuffer::setScissor(int x, int y, int width, int height) {
+        MTLScissorRect scissor = {
+            .x = static_cast<NSUInteger>(x),
+            .y = static_cast<NSUInteger>(y),
+            .width = static_cast<NSUInteger>(width),
+            .height = static_cast<NSUInteger>(height)
+        };
+        [encoder_ setScissorRect:scissor];
+    }
+
+    void MetalCommandBuffer::setPipeline(PipelinePtr pipeline) {
+        currentPipeline_ = std::static_pointer_cast<MetalPipeline>(pipeline);
+        [encoder_ setRenderPipelineState:currentPipeline_->getMetalPipelineState()];
+        [encoder_ setDepthStencilState:currentPipeline_->getDepthStencilState()];
+
+        // Set cull mode based on render state
+        const auto& renderState = currentPipeline_->getDescriptor().renderState;
+        switch (renderState.cullMode) {
+            case CullMode::None:
+                [encoder_ setCullMode:MTLCullModeNone];
+                break;
+            case CullMode::Front:
+                [encoder_ setCullMode:MTLCullModeFront];
+                break;
+            case CullMode::Back:
+                [encoder_ setCullMode:MTLCullModeBack];
+                break;
+        }
+
+        // Set winding order
+        MTLWinding winding = (renderState.windingOrder == WindingOrder::Clockwise) ?
+            MTLWindingClockwise : MTLWindingCounterClockwise;
+        [encoder_ setFrontFacingWinding:winding];
+    }
+
+    void MetalCommandBuffer::setVertexBuffer(BufferPtr buffer, uint32_t slot) {
+        auto metalBuffer = std::static_pointer_cast<MetalBuffer>(buffer);
+        [encoder_ setVertexBuffer:metalBuffer->getMetalBuffer() offset:0 atIndex:slot];
+    }
+
+    void MetalCommandBuffer::setIndexBuffer(BufferPtr buffer) {
+        auto metalBuffer = std::static_pointer_cast<MetalBuffer>(buffer);
+        indexBuffer_ = metalBuffer->getMetalBuffer();
+    }
+
+void MetalCommandBuffer::setUniformBuffer(BufferPtr buffer, uint32_t slot) {
+    auto metalBuffer = std::static_pointer_cast<MetalBuffer>(buffer);
+    [encoder_ setVertexBuffer:metalBuffer->getMetalBuffer() offset:0 atIndex:slot];
+}
+    void MetalCommandBuffer::setTexture(TexturePtr texture, uint32_t slot) {
+        auto metalTexture = std::static_pointer_cast<MetalTexture>(texture);
+        [encoder_ setFragmentTexture:metalTexture->getMetalTexture() atIndex:slot];
+    }
+
+    void MetalCommandBuffer::setSamplerState(const SamplerState& sampler, uint32_t slot) {
+        // For now, use default sampler. In a full implementation, we'd create MTLSamplerState
+        // based on the SamplerState parameters
+    }
+
+    void MetalCommandBuffer::draw(PrimitiveType primitive, uint32_t vertexCount, uint32_t firstVertex) {
+        MTLPrimitiveType metalPrimitive = toMetalPrimitiveType(primitive);
+        [encoder_ drawPrimitives:metalPrimitive vertexStart:firstVertex vertexCount:vertexCount];
+    }
+
+    void MetalCommandBuffer::drawIndexed(PrimitiveType primitive, uint32_t indexCount, uint32_t firstIndex, int32_t vertexOffset) {
+        if (!indexBuffer_) {
+            throw std::runtime_error("No index buffer set for indexed draw call");
+        }
+
+        MTLPrimitiveType metalPrimitive = toMetalPrimitiveType(primitive);
+        [encoder_ drawIndexedPrimitives:metalPrimitive
+                             indexCount:indexCount
+                              indexType:MTLIndexTypeUInt16
+                            indexBuffer:indexBuffer_
+                      indexBufferOffset:firstIndex * sizeof(uint16_t)];
+    }
+
+    void MetalCommandBuffer::drawInstanced(PrimitiveType primitive, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) {
+        MTLPrimitiveType metalPrimitive = toMetalPrimitiveType(primitive);
+        [encoder_ drawPrimitives:metalPrimitive
+                     vertexStart:firstVertex
+                     vertexCount:vertexCount
+                   instanceCount:instanceCount
+                    baseInstance:firstInstance];
+    }
+
+    void MetalCommandBuffer::setUniform(const std::string& name, float value) {
+        // Simplified uniform setting - in a full implementation, we'd track uniform locations
+        // For now, this is a placeholder
+    }
+
+    void MetalCommandBuffer::setUniform(const std::string& name, const Math::Vec2& value) {
+        // Placeholder - implement uniform tracking system
+    }
+
+    void MetalCommandBuffer::setUniform(const std::string& name, const Math::Vec3& value) {
+        // Placeholder - implement uniform tracking system
+    }
+
+    void MetalCommandBuffer::setUniform(const std::string& name, const Math::Vec4& value) {
+        // Placeholder - implement uniform tracking system
+    }
+
+    void MetalCommandBuffer::setUniform(const std::string& name, const Math::Mat4& value) {
+        // Placeholder - implement uniform tracking system
+    }
+
+    MTLPrimitiveType MetalCommandBuffer::toMetalPrimitiveType(PrimitiveType type) {
+        switch (type) {
+            case PrimitiveType::Points: return MTLPrimitiveTypePoint;
+            case PrimitiveType::Lines: return MTLPrimitiveTypeLine;
+            case PrimitiveType::LineStrip: return MTLPrimitiveTypeLineStrip;
+            case PrimitiveType::Triangles: return MTLPrimitiveTypeTriangle;
+            case PrimitiveType::TriangleStrip: return MTLPrimitiveTypeTriangleStrip;
+            default: return MTLPrimitiveTypeTriangle;
+        }
+    }
+
+    // ========================================
+    // MetalRenderDevice Implementation
+    // ========================================
+
+    MetalRenderDevice::MetalRenderDevice(id<MTLDevice> device, CAMetalLayer* layer)
+        : device_(device), layer_(layer), currentCommandBuffer_(nil), currentDrawable_(nil), frameWidth_(0), frameHeight_(0) {
+
+        deviceName_ = std::string([[device name] UTF8String]);
+        commandQueue_ = [device newCommandQueue];
+
+        if (!commandQueue_) {
+            throw std::runtime_error("Failed to create Metal command queue");
+        }
+
+        // Configure layer
+        layer_.device = device_;
+        layer_.pixelFormat = MTLPixelFormatBGRA8Unorm;
+        layer_.framebufferOnly = YES;
+
+    	CGSize ds = layer_.drawableSize;
+    	if (ds.width < 1 || ds.height < 1) {
+        CGFloat scale = layer_.contentsScale > 0 ? layer_.contentsScale : 1.0;
+        CGSize pts = layer_.bounds.size;
+        layer_.drawableSize = CGSizeMake(std::max<CGFloat>(1, pts.width * scale),
+                                         std::max<CGFloat>(1, pts.height * scale));
+        ds = layer_.drawableSize;
+   			 }
+   			 frameWidth_  = static_cast<uint32_t>(ds.width);
+   		 frameHeight_ = static_cast<uint32_t>(ds.height);
+
+        createDepthBuffer();
+    }
+
+    BufferPtr MetalRenderDevice::createBuffer(BufferType type, BufferUsage usage, size_t size, const void* data) {
+        return std::make_shared<MetalBuffer>(device_, type, usage, size, data);
+    }
+
+    TexturePtr MetalRenderDevice::createTexture(uint32_t width, uint32_t height, TextureFormat format, TextureUsage usage, const void* data) {
+        return std::make_shared<MetalTexture>(device_, width, height, format, usage, data);
+    }
+
+    ShaderPtr MetalRenderDevice::createShader(ShaderStage stage, const std::string& source, const std::string& name) {
+        return std::make_shared<MetalShader>(device_, stage, source, name);
+    }
+
+    PipelinePtr MetalRenderDevice::createPipeline(const PipelineDescriptor& descriptor) {
+        return std::make_shared<MetalPipeline>(device_, descriptor);
+    }
+
+    void MetalRenderDevice::beginFrame() {
+        currentCommandBuffer_ = [commandQueue_ commandBuffer];
+        currentDrawable_ = [layer_ nextDrawable];
+
+        if (!currentCommandBuffer_ || !currentDrawable_) {
+            throw std::runtime_error("Failed to begin Metal frame");
+        }
+    }
+
+void MetalRenderDevice::endFrame() {
+    if (currentCommandBuffer_) {
+        if (currentDrawable_) [currentCommandBuffer_ presentDrawable:currentDrawable_];
+        [currentCommandBuffer_ commit];
+        currentCommandBuffer_ = nil;
+        currentDrawable_ = nil;
+    }
+}
+
+    void MetalRenderDevice::present() {
+        if (currentCommandBuffer_ && currentDrawable_) {
+            [currentCommandBuffer_ presentDrawable:currentDrawable_];
+        }
+    }
+
+    CommandBufferPtr MetalRenderDevice::beginRenderPass(const RenderPassDescriptor& descriptor) {
+        if (!currentCommandBuffer_) {
+            throw std::runtime_error("No active command buffer for render pass");
+        }
+
+        MTLRenderPassDescriptor* renderPassDescriptor = [MTLRenderPassDescriptor renderPassDescriptor];
+
+        // Color attachment
+        if (descriptor.colorTarget) {
+            auto metalTexture = std::static_pointer_cast<MetalTexture>(descriptor.colorTarget);
+            renderPassDescriptor.colorAttachments[0].texture = metalTexture->getMetalTexture();
+        } else {
+            // Use backbuffer
+            renderPassDescriptor.colorAttachments[0].texture = currentDrawable_.texture;
+        }
+
+        renderPassDescriptor.colorAttachments[0].loadAction =
+            (descriptor.colorLoadAction == LoadAction::Clear) ? MTLLoadActionClear : MTLLoadActionLoad;
+        renderPassDescriptor.colorAttachments[0].storeAction =
+            (descriptor.colorStoreAction == StoreAction::Store) ? MTLStoreActionStore : MTLStoreActionDontCare;
+        renderPassDescriptor.colorAttachments[0].clearColor = MTLClearColorMake(
+            descriptor.clearValue.color.x,
+            descriptor.clearValue.color.y,
+            descriptor.clearValue.color.z,
+            descriptor.clearValue.color.w
+        );
+
+        // Depth attachment
+        if (descriptor.depthTarget) {
+            auto metalTexture = std::static_pointer_cast<MetalTexture>(descriptor.depthTarget);
+            renderPassDescriptor.depthAttachment.texture = metalTexture->getMetalTexture();
+        } else if (depthBuffer_) {
+            auto metalTexture = std::static_pointer_cast<MetalTexture>(depthBuffer_);
+            renderPassDescriptor.depthAttachment.texture = metalTexture->getMetalTexture();
+        }
+
+        if (renderPassDescriptor.depthAttachment.texture) {
+            renderPassDescriptor.depthAttachment.loadAction =
+                (descriptor.depthLoadAction == LoadAction::Clear) ? MTLLoadActionClear : MTLLoadActionLoad;
+            renderPassDescriptor.depthAttachment.storeAction =
+                (descriptor.depthStoreAction == StoreAction::Store) ? MTLStoreActionStore : MTLStoreActionDontCare;
+            renderPassDescriptor.depthAttachment.clearDepth = descriptor.clearValue.depth;
+        }
+
+        id<MTLRenderCommandEncoder> encoder = [currentCommandBuffer_ renderCommandEncoderWithDescriptor:renderPassDescriptor];
+
+        if (!encoder) {
+            throw std::runtime_error("Failed to create render command encoder");
+        }
+
+        return std::make_shared<MetalCommandBuffer>(currentCommandBuffer_, encoder);
+    }
+
+    void MetalRenderDevice::endRenderPass(CommandBufferPtr commandBuffer) {
+        auto metalCommandBuffer = std::static_pointer_cast<MetalCommandBuffer>(commandBuffer);
+        [metalCommandBuffer->getMetalEncoder() endEncoding];
+    }
+
+    TexturePtr MetalRenderDevice::getBackBuffer() {
+	    if (!currentDrawable_ || frameWidth_ == 0 || frameHeight_ == 0) return nullptr;
+   		 return nullptr; // Let beginRenderPass use currentDrawable_.texture directly
+    }
+
+    TexturePtr MetalRenderDevice::getDepthBuffer() {
+        return depthBuffer_;
+    }
+
+    void MetalRenderDevice::resizeBackBuffer(uint32_t width, uint32_t height) {
+        frameWidth_ = width;
+        frameHeight_ = height;
+        layer_.drawableSize = CGSizeMake(width, height);
+        createDepthBuffer();
+    }
+
+    uint32_t MetalRenderDevice::getMaxTextureSize() const {
+        return 16384; // Metal's typical max texture size
+    }
+
+    uint32_t MetalRenderDevice::getMaxVertexAttributes() const {
+        return 31; // Metal's max vertex attributes
+    }
+
+    void MetalRenderDevice::setDebugName(const std::string& name) {
+        // Metal debug naming would go here
+    }
+
+    void MetalRenderDevice::beginDebugGroup(const std::string& name) {
+        if (currentCommandBuffer_) {
+            [currentCommandBuffer_ pushDebugGroup:[NSString stringWithUTF8String:name.c_str()]];
+        }
+    }
+
+    void MetalRenderDevice::endDebugGroup() {
+        if (currentCommandBuffer_) {
+            [currentCommandBuffer_ popDebugGroup];
+        }
+    }
+
+    void MetalRenderDevice::createDepthBuffer() {
+        if (frameWidth_ > 0 && frameHeight_ > 0) {
+            depthBuffer_ = createTexture(frameWidth_, frameHeight_, TextureFormat::Depth32Float, TextureUsage::DepthStencil);
+        }
+    }
+
+    // ========================================
+    // Factory Function
+    // ========================================
+
+    RenderDevicePtr createMetalRenderDevice(id<MTLDevice> device, CAMetalLayer* layer) {
+        return std::make_shared<MetalRenderDevice>(device, layer);
+    }
+
+} // namespace Metal
+} // namespace Graphics
+} // namespace Engine
+
+
+## File: ./Renderer.mm
+// Renderer.mm
+// UPDATED VERSION - Clean implementation using graphics abstraction
+#include "Renderer.hpp"
+#include <stdexcept>
+#include <cstdio>
+
+Renderer::Renderer(Engine::Graphics::RenderDevicePtr device)
+    : device_(device), frameCount_(0), width_(0), height_(0) {
+
+    if (!device_ || !device_->isValid()) {
+        throw std::runtime_error("Invalid render device provided to Renderer");
+    }
+
+    printf("🎯 Creating modern Renderer with device: %s\n", device_->getDeviceName().c_str());
+
+    createPipeline();
+    createUniformBuffer();
+
+    printf("✅ Modern Renderer initialized successfully\n");
+}
+
+Renderer::~Renderer() {
+    printf("🧹 Renderer destroyed\n");
+}
+
+void Renderer::createPipeline() {
+    try {
+        // CHANGE: Pass empty string as source to load from default library
+        auto vertexShader = device_->createShader(
+            Engine::Graphics::ShaderStage::Vertex,
+            "",        // Empty source = load from default library
+            "vs_main"  // Function name in Shaders.metal
+        );
+
+        auto fragmentShader = device_->createShader(
+            Engine::Graphics::ShaderStage::Fragment,
+            "",              // Empty source = load from default library
+            "fs_main_lit"    // Use the lit version from Shaders.metal
+        );
+
+        // Rest stays the same...
+        Engine::Graphics::PipelineDescriptor pipelineDesc;
+        pipelineDesc.vertexShader = vertexShader;
+        pipelineDesc.fragmentShader = fragmentShader;
+        pipelineDesc.vertexLayout = Engine::Graphics::VertexLayout::PositionColorNormalTexCoord();
+        pipelineDesc.colorFormats = {Engine::Graphics::TextureFormat::BGRA8};
+        pipelineDesc.depthFormat = Engine::Graphics::TextureFormat::Depth32Float;
+        pipelineDesc.name = "MainPipeline";
+
+        pipelineDesc.renderState.cullMode = Engine::Graphics::CullMode::Back;
+        pipelineDesc.renderState.windingOrder = Engine::Graphics::WindingOrder::CounterClockwise;
+        pipelineDesc.renderState.depthFunction = Engine::Graphics::CompareFunction::Less;
+        pipelineDesc.renderState.depthWriteEnabled = true;
+        pipelineDesc.renderState.depthTestEnabled = true;
+
+        pipeline_ = device_->createPipeline(pipelineDesc);
+
+        if (!pipeline_ || !pipeline_->isValid()) {
+            throw std::runtime_error("Failed to create render pipeline");
+        }
+
+        printf("✅ Render pipeline created successfully using Shaders.metal\n");
+
+    } catch (const std::exception& e) {
+        printf("❌ Failed to create pipeline: %s\n", e.what());
+        throw;
+    }
+}
+
+void Renderer::createUniformBuffer() {
+    size_t uniformSize = sizeof(Uniforms);
+    uniformBuffer_ = device_->createBuffer(
+        Engine::Graphics::BufferType::Uniform,
+        Engine::Graphics::BufferUsage::Dynamic,
+        uniformSize
+    );
+
+    if (!uniformBuffer_) {
+        throw std::runtime_error("Failed to create uniform buffer");
+    }
+
+    printf("✅ Uniform buffer created: %zu bytes\n", uniformSize);
+}
+
+void Renderer::beginFrame() {
+    device_->beginFrame();
+    frameCount_++;
+}
+
+void Renderer::render(const Engine::Camera& camera) {
+    if (renderItems_.empty()) {
+        return; // Nothing to render
+    }
+
+    auto depthBuffer = device_->getDepthBuffer();
+
+    // Calculate aspect ratio (use current window size or default)
+    float aspect = (width_ > 0 && height_ > 0) ?
+        static_cast<float>(width_) / static_cast<float>(height_) :
+        16.0f / 9.0f; // Default aspect ratio
+
+    // Get camera matrices
+    Engine::Math::Mat4 projection = camera.getProjectionMatrix(aspect);
+    Engine::Math::Mat4 view = camera.getViewMatrix();
+
+    // Setup render pass
+    Engine::Graphics::RenderPassDescriptor renderPassDesc;
+    renderPassDesc.colorTarget = nullptr;
+    renderPassDesc.depthTarget = depthBuffer;
+    renderPassDesc.colorLoadAction = Engine::Graphics::LoadAction::Clear;
+    renderPassDesc.colorStoreAction = Engine::Graphics::StoreAction::Store;
+    renderPassDesc.depthLoadAction = Engine::Graphics::LoadAction::Clear;
+    renderPassDesc.depthStoreAction = Engine::Graphics::StoreAction::DontCare;
+    renderPassDesc.clearValue.color = {0.0f, 0.1f, 0.3f, 1.0f}; // Dark blue background
+    renderPassDesc.clearValue.depth = 1.0f;
+
+    // Begin render pass
+    auto commandBuffer = device_->beginRenderPass(renderPassDesc);
+
+    // Set viewport
+    commandBuffer->setViewport(0, 0,
+        width_ > 0 ? width_ : 1920,
+        height_ > 0 ? height_ : 1600);
+
+    // Set pipeline
+    commandBuffer->setPipeline(pipeline_);
+
+    // Render all items
+    for (const auto& item : renderItems_) {
+        // FIXED: Correct matrix multiplication order
+        // Standard graphics pipeline: projection * view * model
+        Engine::Math::Mat4 model = item.transform;
+        Engine::Math::Mat4 modelView = Engine::Math::Matrix::multiply(view, model);
+        Engine::Math::Mat4 mvp = Engine::Math::Matrix::multiply(projection, modelView);
+
+        // Alternative approach - multiply in sequence:
+        // Engine::Math::Mat4 mvp = Engine::Math::Matrix::multiply(
+        //     Engine::Math::Matrix::multiply(projection, view),
+        //     model
+        // );
+
+        // Update uniforms
+        Uniforms uniforms = {
+            .modelViewProjection = mvp,
+            .model = model,
+            .view = view,
+            .projection = projection
+        };
+
+        uniformBuffer_->update(&uniforms, sizeof(uniforms));
+
+        // Set uniform buffer
+        commandBuffer->setUniformBuffer(uniformBuffer_, 1);
+
+        // Draw the mesh
+        item.mesh->draw(commandBuffer);
+    }
+
+    // End render pass
+    device_->endRenderPass(commandBuffer);
+
+    // Debug output every 60 frames - ADD DEBUG INFO
+    if (frameCount_ % 60 == 0) {
+        Engine::Math::Vec3 pos = camera.getPosition();
+        Engine::Math::Vec3 forward = camera.getForward();
+
+        printf("Camera pos: (%.2f, %.2f, %.2f)\n", pos.x, pos.y, pos.z);
+        printf("Looking direction: (%.3f, %.3f, %.3f)\n", forward.x, forward.y, forward.z);
+        printf("Rendering %zu meshes\n", renderItems_.size());
+        
+        // DEBUG: Print first object's transform
+        if (!renderItems_.empty()) {
+            auto& firstItem = renderItems_[0];
+            Engine::Math::Vec3 translation = Engine::Math::Matrix::getTranslation(firstItem.transform);
+            printf("First object transform: (%.2f, %.2f, %.2f)\n",
+                   translation.x, translation.y, translation.z);
+        }
+    }
+}
+
+void Renderer::endFrame() {
+    device_->endFrame();
+}
+
+void Renderer::addMesh(Engine::Graphics::MeshPtr mesh, const Engine::Math::Mat4& transform) {
+    if (mesh) {
+        renderItems_.push_back({mesh, transform});
+    }
+}
+
+void Renderer::clearScene() {
+    renderItems_.clear();
+}
+
+void Renderer::resize(uint32_t width, uint32_t height) {
+    width_ = width;
+    height_ = height;
+    device_->resizeBackBuffer(width, height);
+    printf("📏 Renderer resized to %dx%d\n", width, height);
+}
+
+
+
+## File: ./Shaders.metal
+
+// Complete Shaders.metal
+
+#include <metal_stdlib>
+using namespace metal;
+
+// ========================================
+// Shared Structures
+// ========================================
+
+// Vertex input structure - matches the Vertex struct in GeometryBuilder.hpp
+struct VertexIn {
+    float3 position [[attribute(0)]];
+    float3 color    [[attribute(1)]];
+    float3 normal   [[attribute(2)]];
+    float2 texCoord [[attribute(3)]];
+};
+
+// Vertex output / Fragment input
+struct VertexOut {
+    float4 position [[position]];
+    float3 color;
+    float3 normal;
+    float2 texCoord;
+    float3 worldPosition;
+    float3 viewPosition;
+};
+
+// Uniform buffer
+struct Uniforms {
+    float4x4 modelViewProjection;
+    float4x4 model;
+    float4x4 view;
+    float4x4 projection;
+};
+
+// Vertex shader
+vertex VertexOut vs_main(VertexIn in [[stage_in]],
+                         constant Uniforms& uniforms [[buffer(1)]],
+                         uint vertexID [[vertex_id]]) {
+    VertexOut out;
+    
+    // Transform position to world space
+    float4 worldPos = uniforms.model * float4(in.position, 1.0);
+    out.worldPosition = worldPos.xyz;
+
+    // Transform to view space
+    float4 viewPos = uniforms.view * worldPos;
+    out.viewPosition = viewPos.xyz;
+
+    // Transform to clip space
+    out.position = uniforms.projection * viewPos;
+
+    // Transform normal to world space (assumes uniform scaling)
+    float3 worldNormal = (uniforms.model * float4(in.normal, 0.0)).xyz;
+    out.normal = normalize(worldNormal);
+    
+    // Pass through other attributes
+    out.color = in.color;
+    out.texCoord = in.texCoord;
+    
+    return out;
+}
+
+// Simple vertex shader for basic geometry (no normals needed)
+vertex VertexOut vs_simple(VertexIn in [[stage_in]],
+                           constant Uniforms& uniforms [[buffer(1)]]) {
+    VertexOut out;
+    out.position = uniforms.modelViewProjection * float4(in.position, 1.0);
+    out.color = in.color;
+    out.texCoord = in.texCoord;
+    out.normal = float3(0, 1, 0); // Default up normal
+    out.worldPosition = in.position;
+    out.viewPosition = in.position;
+    return out;
+}
+
+// ========================================
+// Fragment Shaders - Basic
+// ========================================
+
+// Basic unlit fragment shader - just vertex color
+fragment float4 fs_main(VertexOut in [[stage_in]]) {
+    return float4(in.color, 1.0);
+}
+
+// Colored fragment shader (alias for fs_main for RenderSystem compatibility)
+fragment float4 fs_colored(VertexOut in [[stage_in]]) {
+    return float4(in.color, 1.0);
+}
+
+// ========================================
+// Fragment Shaders - Lighting
+// ========================================
+
+// Main lit fragment shader - simple directional lighting
+fragment float4 fs_main_lit(VertexOut in [[stage_in]]) {
+    // Light parameters
+    float3 lightDirection = normalize(float3(0.5, -0.7, -0.5));
+    float3 lightColor = float3(1.0, 1.0, 1.0);
+    float3 ambientColor = float3(0.2, 0.2, 0.2);
+
+    // Normalize the normal
+    float3 normal = normalize(in.normal);
+    
+    // Calculate diffuse lighting
+    float diffuseStrength = max(dot(normal, -lightDirection), 0.0);
+    float3 diffuse = diffuseStrength * lightColor;
+    
+    // Combine lighting with vertex color
+    float3 finalColor = in.color * (ambientColor + diffuse);
+
+    return float4(finalColor, 1.0);
+}
+
+// Enhanced lighting with specular highlights
+fragment float4 fs_phong(VertexOut in [[stage_in]]) {
+    // Light parameters
+    float3 lightDirection = normalize(float3(0.5, -0.7, -0.5));
+    float3 lightColor = float3(1.0, 1.0, 1.0);
+    float3 ambientColor = float3(0.15, 0.15, 0.15);
+
+    // Material parameters
+    float shininess = 32.0;
+    float3 specularColor = float3(0.3, 0.3, 0.3);
+
+    // Normalize vectors
+    float3 normal = normalize(in.normal);
+    float3 viewDir = normalize(-in.viewPosition);
+
+    // Ambient
+    float3 ambient = ambientColor * in.color;
+
+    // Diffuse
+    float diffuseStrength = max(dot(normal, -lightDirection), 0.0);
+    float3 diffuse = diffuseStrength * lightColor * in.color;
+
+    // Specular (Phong)
+    float3 reflectDir = reflect(lightDirection, normal);
+    float specularStrength = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
+    float3 specular = specularStrength * specularColor * lightColor;
+
+    float3 finalColor = ambient + diffuse + specular;
+    return float4(finalColor, 1.0);
+}
+
+// ========================================
+// Fragment Shaders - Textured
+// ========================================
+
+// Basic textured fragment shader
+fragment float4 fs_textured(VertexOut in [[stage_in]],
+                            texture2d<float> colorTexture [[texture(0)]],
+                            sampler colorSampler [[sampler(0)]]) {
+    return colorTexture.sample(colorSampler, in.texCoord);
+}
+
+// Textured with lighting
+fragment float4 fs_textured_lit(VertexOut in [[stage_in]],
+                                texture2d<float> colorTexture [[texture(0)]],
+                                sampler colorSampler [[sampler(0)]]) {
+    // Sample texture
+    float4 texColor = colorTexture.sample(colorSampler, in.texCoord);
+
+    // Light parameters
+    float3 lightDirection = normalize(float3(0.5, -0.7, -0.5));
+    float3 lightColor = float3(1.0, 1.0, 1.0);
+    float3 ambientColor = float3(0.2, 0.2, 0.2);
+
+    // Calculate lighting
+    float3 normal = normalize(in.normal);
+    float diffuseStrength = max(dot(normal, -lightDirection), 0.0);
+    float3 diffuse = diffuseStrength * lightColor;
+
+    // Combine
+    float3 finalColor = texColor.rgb * (ambientColor + diffuse);
+    return float4(finalColor, texColor.a);
+}
+
+// ========================================
+// Fragment Shaders - Special Effects
+// ========================================
+
+// Distance-based color fragment shader
+fragment float4 fs_distance_color(VertexOut in [[stage_in]]) {
+    // Calculate distance from camera (view space Z is distance)
+    float distance = length(in.viewPosition);
+
+    // Create color based on distance
+    float normalizedDistance = distance / 10.0; // Normalize to 0-1 over 10 units
+    float3 nearColor = float3(1.0, 0.0, 0.0);   // Red when close
+    float3 farColor = float3(0.0, 0.0, 1.0);    // Blue when far
+
+    float3 distanceColor = mix(nearColor, farColor, clamp(normalizedDistance, 0.0, 1.0));
+
+    // Mix with original color
+    float3 finalColor = mix(in.color, distanceColor, 0.5);
+
+    return float4(finalColor, 1.0);
+}
+
+// Fresnel/rim lighting effect
+fragment float4 fs_fresnel(VertexOut in [[stage_in]]) {
+    float3 viewDir = normalize(-in.viewPosition);
+    float3 normal = normalize(in.normal);
+
+    // Fresnel-like effect
+    float fresnel = 1.0 - max(dot(viewDir, normal), 0.0);
+    fresnel = pow(fresnel, 2.0);
+
+    // Base color with fresnel rim lighting
+    float3 baseColor = in.color;
+    float3 rimColor = float3(0.5, 0.8, 1.0);
+    float3 finalColor = mix(baseColor, rimColor, fresnel * 0.6);
+
+    return float4(finalColor, 1.0);
+}
+
+// Normal visualization (for debugging)
+fragment float4 fs_normal_debug(VertexOut in [[stage_in]]) {
+    float3 normal = normalize(in.normal);
+    // Convert from [-1,1] to [0,1] range for color display
+    return float4(normal * 0.5 + 0.5, 1.0);
+}
+
+// Wireframe shader
+fragment float4 fs_wireframe(VertexOut in [[stage_in]]) {
+    return float4(1.0, 1.0, 1.0, 1.0); // White wireframe
+}
+
+// UV coordinate visualization
+fragment float4 fs_uv_debug(VertexOut in [[stage_in]]) {
+    return float4(in.texCoord.x, in.texCoord.y, 0.0, 1.0);
+}
+    
+// World position visualization
+fragment float4 fs_world_pos_debug(VertexOut in [[stage_in]]) {
+    float3 pos = in.worldPosition;
+    // Normalize world position to [0,1] range (assuming objects are within [-10,10] bounds)
+    float3 normalizedPos = (pos + 10.0) / 20.0;
+    return float4(normalizedPos, 1.0);
+}
+
+// ========================================
+// Fragment Shaders - Animated Effects
+// ========================================
+
+// Time-based color cycling (requires time uniform)
+struct TimeUniforms {
+    float time;
+    float deltaTime;
+    uint frameCount;
+};
+
+fragment float4 fs_animated_color(VertexOut in [[stage_in]],
+                                  constant TimeUniforms& timeUniforms [[buffer(2)]]) {
+    float time = timeUniforms.time;
+
+    // Create animated color based on time and position
+    float3 animatedColor;
+    animatedColor.r = (sin(time + in.worldPosition.x) + 1.0) * 0.5;
+    animatedColor.g = (cos(time + in.worldPosition.y) + 1.0) * 0.5;
+    animatedColor.b = (sin(time * 0.7 + in.worldPosition.z) + 1.0) * 0.5;
+
+    // Mix with vertex color
+    float3 finalColor = mix(in.color, animatedColor, 0.7);
+
+    return float4(finalColor, 1.0);
+}
+
+// Pulsing effect
+fragment float4 fs_pulse(VertexOut in [[stage_in]],
+                         constant TimeUniforms& timeUniforms [[buffer(2)]]) {
+    float pulse = (sin(timeUniforms.time * 3.0) + 1.0) * 0.5;
+    float3 finalColor = in.color * (0.5 + pulse * 0.5);
+    return float4(finalColor, 1.0);
+}
+
+
+
+## File: ./Renderer.hpp
+// Renderer.hpp
+// UPDATED VERSION - Modern renderer using graphics abstraction
+#pragma once
+
+#include "Engine/Graphics/RenderDevice.hpp"
+#include "Engine/Graphics/GeometryBuilder.hpp"
+#include "Engine/Camera.hpp"
+
+#include <memory>
+#include <vector>
+
+class Renderer {
+public:
+    Renderer(Engine::Graphics::RenderDevicePtr device);
+    ~Renderer();
+
+    // Main rendering interface
+    void beginFrame();
+    void render(const Engine::Camera& camera);
+    void endFrame();
+
+    // Scene management
+    void addMesh(Engine::Graphics::MeshPtr mesh, const Engine::Math::Mat4& transform = Engine::Math::Matrix::identity());
+    void clearScene();
+
+    // Utility
+    void resize(uint32_t width, uint32_t height);
+    bool isValid() const { return device_ && device_->isValid(); }
+
+private:
+    struct RenderItem {
+        Engine::Graphics::MeshPtr mesh;
+        Engine::Math::Mat4 transform;
+    };
+
+    // Core rendering system
+    Engine::Graphics::RenderDevicePtr device_;
+    Engine::Graphics::PipelinePtr pipeline_;
+    Engine::Graphics::BufferPtr uniformBuffer_;
+
+    // Scene data
+    std::vector<RenderItem> renderItems_;
+
+    // Uniform data structure
+    struct Uniforms {
+        Engine::Math::Mat4 modelViewProjection;
+        Engine::Math::Mat4 model;
+        Engine::Math::Mat4 view;
+        Engine::Math::Mat4 projection;
+    };
+
+    // Setup methods
+    void createPipeline();
+    void createUniformBuffer();
+
+    // Debug tracking
+    uint32_t frameCount_;
+    uint32_t width_, height_;
+};
+
+using RendererPtr = std::shared_ptr<Renderer>;
+
+
+
+## File: ./MetalApplication.hpp
+// MetalApplication.hpp
+// UPDATED VERSION - Clean application using graphics abstraction
+#pragma once
+
+#include "Renderer.hpp"
+#include <memory>
+#include <vector>
+
+// Input state structure
+struct InputState {
+    bool moveForward = false;
+    bool moveBackward = false;
+    bool moveLeft = false;
+    bool moveRight = false;
+    bool moveUp = false;
+    bool moveDown = false;
+    bool mouseLookEnabled = false;
+};
+
+// Modern Metal Application class
+class MetalApplication {
+public:
+    MetalApplication();
+    ~MetalApplication();
+
+    // Lifecycle methods
+    void onInitialize(Engine::Graphics::RenderDevicePtr device);
+    void onUpdate(float deltaTime);
+    void onRender();
+    void onResize(int width, int height);
+    void onShutdown();
+
+    // Input processing
+    void processKeyDown(unsigned short keyCode);
+    void processKeyUp(unsigned short keyCode);
+    void processMouseMove(float deltaX, float deltaY);
+    void setMouseLook(bool enabled);
+
+    // Getters
+    Engine::Camera* getCamera() { return camera_.get(); }
+    const InputState& getInputState() const { return inputState_; }
+
+    // Scene management
+    void setupScene();
+
+private:
+    // Core systems
+    Engine::Graphics::RenderDevicePtr renderDevice_;
+    std::unique_ptr<Renderer> renderer_;
+    std::unique_ptr<Engine::Camera> camera_;
+
+    // Scene objects
+    std::vector<Engine::Graphics::MeshPtr> sceneMeshes_;
+
+    // Input state
+    InputState inputState_;
+
+    // Camera control parameters
+    float moveSpeed_ = 5.0f;
+    float mouseSensitivity_ = 0.002f;
+
+    // Application state
+    bool isInitialized_ = false;
+};
+
+// Global function to get the application instance
+MetalApplication* getMetalApplication();
+
+
+
+## File: ./Engine/Core/Time.hpp
+// Engine/Core/Time.hpp
+// Centralized time management system
+#pragma once
+
+#include <chrono>
+#include <cstdint>
+#include <thread>  // Added for std::this_thread::sleep_for
+#include <string>   // Added for std::string
+#include <algorithm> // Added for std::min/max
+#include <cstdio>   // Added for printf
+
+namespace Engine {
+namespace Core {
+
+    class Time {
+    public:
+        using Clock = std::chrono::high_resolution_clock;
+        using TimePoint = Clock::time_point;
+        using Duration = std::chrono::duration<float>;
+
+        // Singleton access
+        static Time& getInstance() {
+            static Time instance;
+            return instance;
+        }
+
+        // Initialize the time system
+        void initialize() {
+            startTime_ = Clock::now();
+            currentTime_ = startTime_;
+            lastFrameTime_ = startTime_;
+            deltaTime_ = 0.0f;
+            unscaledDeltaTime_ = 0.0f;
+            timeScale_ = 1.0f;
+            frameCount_ = 0;
+            fps_ = 0.0f;
+            fpsUpdateTime_ = 0.0f;
+            fpsFrameCount_ = 0;
+        }
+
+        // Update time (call once per frame)
+        void update() {
+            TimePoint now = Clock::now();
+
+            // Calculate unscaled delta time
+            Duration delta = now - lastFrameTime_;
+            unscaledDeltaTime_ = delta.count();
+
+            // Cap delta time to prevent large jumps
+            unscaledDeltaTime_ = std::min(unscaledDeltaTime_, maxDeltaTime_);
+
+            // Apply time scale
+            deltaTime_ = unscaledDeltaTime_ * timeScale_;
+
+            // Update times
+            lastFrameTime_ = currentTime_;
+            currentTime_ = now;
+
+            // Update total time
+            Duration totalDuration = currentTime_ - startTime_;
+            time_ = totalDuration.count();
+
+            // Update frame count
+            frameCount_++;
+
+            // Update FPS counter
+            updateFPS();
+        }
+
+        // Getters
+        float getDeltaTime() const { return deltaTime_; }
+        float getUnscaledDeltaTime() const { return unscaledDeltaTime_; }
+        float getTime() const { return time_; }
+        float getTimeScale() const { return timeScale_; }
+        uint64_t getFrameCount() const { return frameCount_; }
+        float getFPS() const { return fps_; }
+        float getTargetFPS() const { return targetFPS_; }
+
+        // Setters
+        void setTimeScale(float scale) {
+            timeScale_ = std::max(0.0f, scale);
+        }
+
+        void setTargetFPS(float fps) {
+            targetFPS_ = fps;
+            if (fps > 0) {
+                targetFrameTime_ = 1.0f / fps;
+            }
+        }
+
+        // Frame rate limiting
+        void waitForTargetFPS() {
+            if (targetFPS_ <= 0) return;
+
+            Duration elapsed = Clock::now() - currentTime_;
+            float elapsedSeconds = elapsed.count();
+
+            if (elapsedSeconds < targetFrameTime_) {
+                float sleepTime = targetFrameTime_ - elapsedSeconds;
+                std::this_thread::sleep_for(
+                    std::chrono::duration<float>(sleepTime)
+                );
+            }
+        }
+
+        // Timing utilities
+        class ScopedTimer {
+        public:
+            ScopedTimer(const std::string& name)
+                : name_(name), start_(Clock::now()) {}
+
+            ~ScopedTimer() {
+                Duration elapsed = Clock::now() - start_;
+                printf("[Timer] %s: %.3f ms\n",
+                       name_.c_str(), elapsed.count() * 1000.0f);
+            }
+
+        private:
+            std::string name_;
+            TimePoint start_;
+        };
+
+        // Fixed update support
+        bool shouldDoFixedUpdate() {
+            fixedUpdateAccumulator_ += unscaledDeltaTime_;
+            if (fixedUpdateAccumulator_ >= fixedDeltaTime_) {
+                fixedUpdateAccumulator_ -= fixedDeltaTime_;
+                return true;
+            }
+            return false;
+        }
+
+        float getFixedDeltaTime() const { return fixedDeltaTime_; }
+
+        void setFixedDeltaTime(float dt) {
+            fixedDeltaTime_ = std::max(0.001f, dt);
+        }
+
+        // Interpolation factor for fixed update
+        float getInterpolation() const {
+            return fixedUpdateAccumulator_ / fixedDeltaTime_;
+        }
+
+    private:
+        Time() : time_(0.0f) {  // Initialize time_ to avoid uninitialized warning
+            initialize();
+        }
+
+        void updateFPS() {
+            fpsUpdateTime_ += unscaledDeltaTime_;
+            fpsFrameCount_++;
+
+            if (fpsUpdateTime_ >= 1.0f) {
+                fps_ = fpsFrameCount_ / fpsUpdateTime_;
+                fpsUpdateTime_ = 0.0f;
+                fpsFrameCount_ = 0;
+            }
+        }
+
+        // Time points
+        TimePoint startTime_;
+        TimePoint currentTime_;
+        TimePoint lastFrameTime_;
+
+        // Time values
+        float deltaTime_;
+        float unscaledDeltaTime_;
+        float time_;
+        float timeScale_;
+
+        // Frame counting
+        uint64_t frameCount_;
+
+        // FPS calculation
+        float fps_;
+        float fpsUpdateTime_;
+        int fpsFrameCount_;
+
+        // Frame rate limiting
+        float targetFPS_ = 0.0f;  // 0 = unlimited
+        float targetFrameTime_ = 0.0f;
+
+        // Fixed update
+        float fixedDeltaTime_ = 1.0f / 60.0f;  // 60 Hz default
+        float fixedUpdateAccumulator_ = 0.0f;
+
+        // Safety
+        float maxDeltaTime_ = 1.0f / 30.0f;  // Cap at 30 FPS minimum
+    };
+
+    // Convenience functions
+    inline float DeltaTime() { return Time::getInstance().getDeltaTime(); }
+    inline float UnscaledDeltaTime() { return Time::getInstance().getUnscaledDeltaTime(); }
+    inline float CurrentTime() { return Time::getInstance().getTime(); }
+    inline float FPS() { return Time::getInstance().getFPS(); }
+
+} // namespace Core
+} // namespace Engine
+
+
+## File: ./Engine/Core/Transform.hpp
+// Transform.hpp
+// Enhanced Transform system with better performance and features
+#pragma once
+
+#include "Math.hpp"
+#include <vector>      // Added for std::vector
+#include <algorithm>   // Added for std::remove
+
+namespace Engine {
+
+    class Transform {
+    public:
+        // ========================================
+        // Constructors
+        // ========================================
+
+        Transform()
+            : position_(Math::Vector::Constants::ZERO)
+            , rotation_(Math::Quaternion::identity())
+            , scale_(Math::Vector::Constants::ONE)
+            , isDirty_(true)
+            , parent_(nullptr)
+        {}
+
+        Transform(const Math::Vec3& position,
+                 const Math::Quat& rotation = Math::Quaternion::identity(),
+                 const Math::Vec3& scale = Math::Vector::Constants::ONE)
+            : position_(position)
+            , rotation_(rotation)
+            , scale_(scale)
+            , isDirty_(true)
+            , parent_(nullptr)
+        {}
+
+        // ========================================
+        // Position Operations
+        // ========================================
+
+        void setPosition(const Math::Vec3& position) {
+            position_ = position;
+            markDirty();
+        }
+
+        void setPosition(float x, float y, float z) {
+            setPosition(Math::Vector::make(x, y, z));
+        }
+
+        void translate(const Math::Vec3& delta) {
+            position_ += delta;
+            markDirty();
+        }
+
+        void translateLocal(const Math::Vec3& localDelta) {
+            translate(Math::Quaternion::rotateVector(rotation_, localDelta));
+        }
+
+        const Math::Vec3& getPosition() const { return position_; }
+
+        Math::Vec3 getWorldPosition() const {
+            if (parent_) {
+                return Math::Matrix::getTranslation(getWorldMatrix());
+            }
+            return position_;
+        }
+
+        // ========================================
+        // Rotation Operations
+        // ========================================
+
+        void setRotation(const Math::Quat& rotation) {
+            rotation_ = Math::Quaternion::normalize(rotation);
+            markDirty();
+        }
+
+        void setRotationEuler(float pitch, float yaw, float roll) {
+            rotation_ = Math::Quaternion::fromEuler(pitch, yaw, roll);
+            markDirty();
+        }
+
+        void setRotationEulerDegrees(float pitch, float yaw, float roll) {
+            setRotationEuler(
+                Math::degreesToRadians(pitch),
+                Math::degreesToRadians(yaw),
+                Math::degreesToRadians(roll)
+            );
+        }
+
+        void rotate(const Math::Quat& deltaRotation) {
+            rotation_ = Math::Quaternion::multiply(deltaRotation, rotation_);
+            rotation_ = Math::Quaternion::normalize(rotation_);
+            markDirty();
+        }
+
+        void rotateEuler(float pitch, float yaw, float roll) {
+            rotate(Math::Quaternion::fromEuler(pitch, yaw, roll));
+        }
+
+        void rotateEulerDegrees(float pitch, float yaw, float roll) {
+            rotateEuler(
+                Math::degreesToRadians(pitch),
+                Math::degreesToRadians(yaw),
+                Math::degreesToRadians(roll)
+            );
+        }
+
+        void rotateAroundAxis(const Math::Vec3& axis, float angle) {
+            rotate(Math::Quaternion::fromAxisAngle(axis, angle));
+        }
+
+        const Math::Quat& getRotation() const { return rotation_; }
+
+        Math::Vec3 getEulerAngles() const {
+            return Math::Quaternion::toEuler(rotation_);
+        }
+
+        Math::Vec3 getEulerAnglesDegrees() const {
+            return Math::Quaternion::toEulerDegrees(rotation_);
+        }
+
+        // ========================================
+        // Scale Operations
+        // ========================================
+
+        void setScale(const Math::Vec3& scale) {
+            scale_ = scale;
+            markDirty();
+        }
+
+        void setScale(float uniform) {
+            setScale(Math::Vector::make(uniform, uniform, uniform));
+        }
+
+        void setScale(float x, float y, float z) {
+            setScale(Math::Vector::make(x, y, z));
+        }
+
+        void scale(const Math::Vec3& factor) {
+            scale_ = Math::Vec3{scale_.x * factor.x, scale_.y * factor.y, scale_.z * factor.z};
+            markDirty();
+        }
+
+        void scale(float uniform) {
+            scale(Math::Vector::make(uniform, uniform, uniform));
+        }
+
+        const Math::Vec3& getScale() const { return scale_; }
+
+        // ========================================
+        // Direction Vectors
+        // ========================================
+
+        Math::Vec3 getForward() const {
+            return Math::Quaternion::rotateVector(rotation_, Math::Vector::Constants::FORWARD);
+        }
+
+        Math::Vec3 getRight() const {
+            return Math::Quaternion::rotateVector(rotation_, Math::Vector::Constants::RIGHT);
+        }
+
+        Math::Vec3 getUp() const {
+            return Math::Quaternion::rotateVector(rotation_, Math::Vector::Constants::UP);
+        }
+
+        Math::Vec3 getBack() const {
+            return Math::Quaternion::rotateVector(rotation_, Math::Vector::Constants::BACK);
+        }
+
+        Math::Vec3 getLeft() const {
+            return Math::Quaternion::rotateVector(rotation_, Math::Vector::Constants::LEFT);
+        }
+
+        Math::Vec3 getDown() const {
+            return Math::Quaternion::rotateVector(rotation_, Math::Vector::Constants::DOWN);
+        }
+
+        // ========================================
+        // Matrix Operations
+        // ========================================
+
+        Math::Mat4 getLocalMatrix() const {
+            if (isDirty_) {
+                updateMatrix();
+            }
+            return cachedMatrix_;
+        }
+
+        Math::Mat4 getMatrix() const {
+            return getLocalMatrix();
+        }
+
+        Math::Mat4 getModelMatrix() const {
+            return getLocalMatrix();
+        }
+
+        Math::Mat4 getWorldMatrix() const {
+            if (parent_) {
+                return Math::Matrix::multiply(parent_->getWorldMatrix(), getLocalMatrix());
+            }
+            return getLocalMatrix();
+        }
+
+        Math::Mat4 getInverseMatrix() const {
+            return Math::Matrix::inverse(getLocalMatrix());
+        }
+
+        Math::Mat4 getInverseWorldMatrix() const {
+            return Math::Matrix::inverse(getWorldMatrix());
+        }
+
+        // ========================================
+        // Look At Operations
+        // ========================================
+
+        void lookAt(const Math::Vec3& target, const Math::Vec3& up = Math::Vector::Constants::UP) {
+            Math::Vec3 direction = Math::Vector::normalize(target - position_);
+            lookInDirection(direction, up);
+        }
+
+        void lookInDirection(const Math::Vec3& direction, const Math::Vec3& up = Math::Vector::Constants::UP) {
+            Math::Vec3 forward = Math::Vector::normalize(direction);
+            Math::Vec3 right = Math::Vector::normalize(Math::Vector::cross(forward, up));
+            Math::Vec3 actualUp = Math::Vector::cross(right, forward);
+
+            // Create rotation matrix
+            Math::Mat4 rotMatrix = Math::Matrix::identity();
+            rotMatrix.columns[0] = Math::Vector::make(right, 0.0f);
+            rotMatrix.columns[1] = Math::Vector::make(actualUp, 0.0f);
+            rotMatrix.columns[2] = Math::Vector::make(-forward, 0.0f);
+
+            // Convert to quaternion
+            rotation_ = simd_quaternion(rotMatrix);
+            rotation_ = Math::Quaternion::normalize(rotation_);
+            markDirty();
+        }
+
+        // ========================================
+        // Hierarchy Operations
+        // ========================================
+
+        void setParent(Transform* parent) {
+            if (parent_ == parent) return;
+
+            if (parent_) {
+                // Remove from old parent's children
+                auto& children = parent_->children_;
+                children.erase(std::remove(children.begin(), children.end(), this), children.end());
+            }
+
+            parent_ = parent;
+
+            if (parent_) {
+                // Add to new parent's children
+                parent_->children_.push_back(this);
+            }
+
+            markDirty();
+        }
+
+        Transform* getParent() const { return parent_; }
+
+        const std::vector<Transform*>& getChildren() const { return children_; }
+
+        void addChild(Transform* child) {
+            if (child && child != this) {
+                child->setParent(this);
+            }
+        }
+
+        void removeChild(Transform* child) {
+            if (child) {
+                child->setParent(nullptr);
+            }
+        }
+
+        void removeFromParent() {
+            setParent(nullptr);
+        }
+
+        // ========================================
+        // Utility Operations
+        // ========================================
+
+        void reset() {
+            setPosition(Math::Vector::Constants::ZERO);
+            setRotation(Math::Quaternion::identity());
+            setScale(Math::Vector::Constants::ONE);
+        }
+
+        Transform interpolate(const Transform& other, float t) const {
+            Transform result;
+            result.setPosition(Math::Vector::lerp(position_, other.position_, t));
+            result.setRotation(Math::Quaternion::slerp(rotation_, other.rotation_, t));
+            result.setScale(Math::Vector::lerp(scale_, other.scale_, t));
+            return result;
+        }
+
+        bool isEqual(const Transform& other, float epsilon = Math::Constants::EPSILON) const {
+            return Math::Vector::distance(position_, other.position_) < epsilon &&
+                   Math::Quaternion::dot(rotation_, other.rotation_) > (1.0f - epsilon) &&
+                   Math::Vector::distance(scale_, other.scale_) < epsilon;
+        }
+
+        // ========================================
+        // Coordinate Space Conversions
+        // ========================================
+
+        Math::Vec3 transformPoint(const Math::Vec3& point) const {
+            Math::Mat4 matrix = getLocalMatrix();
+            Math::Vec4 result = Math::Matrix::multiply(matrix, Math::Vector::make(point, 1.0f));
+            return Math::Vec3{result.x, result.y, result.z};
+        }
+
+        Math::Vec3 transformDirection(const Math::Vec3& direction) const {
+            return Math::Quaternion::rotateVector(rotation_, direction);
+        }
+
+        Math::Vec3 inverseTransformPoint(const Math::Vec3& point) const {
+            Math::Mat4 invMatrix = getInverseMatrix();
+            Math::Vec4 result = Math::Matrix::multiply(invMatrix, Math::Vector::make(point, 1.0f));
+            return Math::Vec3{result.x, result.y, result.z};
+        }
+
+        Math::Vec3 inverseTransformDirection(const Math::Vec3& direction) const {
+            return Math::Quaternion::rotateVector(Math::Quaternion::conjugate(rotation_), direction);
+        }
+
+        // ========================================
+        // Debug and Serialization
+        // ========================================
+
+        void debugPrint() const {
+            printf("Transform:\n");
+            printf("  Position: (%.3f, %.3f, %.3f)\n", position_.x, position_.y, position_.z);
+            printf("  Rotation: (%.3f, %.3f, %.3f, %.3f)\n",
+                   rotation_.vector.x, rotation_.vector.y, rotation_.vector.z, rotation_.vector.w);
+            printf("  Scale: (%.3f, %.3f, %.3f)\n", scale_.x, scale_.y, scale_.z);
+
+            Math::Vec3 euler = getEulerAnglesDegrees();
+            printf("  Euler (degrees): (%.3f, %.3f, %.3f)\n", euler.x, euler.y, euler.z);
+        }
+
+        // For serialization (you can extend this based on your needs)
+        struct SerializedData {
+            Math::Vec3 position;
+            Math::Quat rotation;
+            Math::Vec3 scale;
+        };
+
+        SerializedData serialize() const {
+            return {position_, rotation_, scale_};
+        }
+
+        void deserialize(const SerializedData& data) {
+            position_ = data.position;
+            rotation_ = data.rotation;
+            scale_ = data.scale;
+            markDirty();
+        }
+
+    private:
+        // ========================================
+        // Internal State
+        // ========================================
+
+        Math::Vec3 position_;
+        Math::Quat rotation_;
+        Math::Vec3 scale_;
+
+        mutable Math::Mat4 cachedMatrix_;
+        mutable bool isDirty_;
+
+        Transform* parent_;
+        std::vector<Transform*> children_;
+
+        // ========================================
+        // Internal Methods
+        // ========================================
+
+        void markDirty() {
+            isDirty_ = true;
+            // Mark all children as dirty too
+            for (Transform* child : children_) {
+                child->markDirty();
+            }
+        }
+
+        void updateMatrix() const {
+            Math::Mat4 t = Math::Matrix::translation(position_);
+            Math::Mat4 r = Math::Quaternion::toMatrix(rotation_);
+            Math::Mat4 s = Math::Matrix::scale(scale_);
+
+            cachedMatrix_ = Math::Matrix::multiply(Math::Matrix::multiply(t, r), s);
+            isDirty_ = false;
+        }
+    };
+
+    // ========================================
+    // Transform Utilities
+    // ========================================
+
+    namespace TransformUtils {
+
+        // Create a transform that looks from one point to another
+        inline Transform createLookAt(const Math::Vec3& from, const Math::Vec3& to,
+                                    const Math::Vec3& up = Math::Vector::Constants::UP) {
+            Transform transform;
+            transform.setPosition(from);
+            transform.lookAt(to, up);
+            return transform;
+        }
+
+        // Create a transform from TRS components
+        inline Transform createTRS(const Math::Vec3& translation,
+                                 const Math::Quat& rotation,
+                                 const Math::Vec3& scale) {
+            return Transform(translation, rotation, scale);
+        }
+
+        // Create a transform from Euler angles
+        inline Transform createFromEuler(const Math::Vec3& position,
+                                       const Math::Vec3& eulerAngles,
+                                       const Math::Vec3& scale = Math::Vector::Constants::ONE) {
+            Transform transform;
+            transform.setPosition(position);
+            transform.setRotationEuler(eulerAngles.x, eulerAngles.y, eulerAngles.z);
+            transform.setScale(scale);
+            return transform;
+        }
+
+        // Calculate relative transform
+        inline Transform getRelativeTransform(const Transform& from, const Transform& to) {
+            Math::Mat4 fromInverse = from.getInverseWorldMatrix();
+            Math::Mat4 toWorld = to.getWorldMatrix();
+            Math::Mat4 relative = Math::Matrix::multiply(fromInverse, toWorld);
+
+            Transform result;
+            result.setPosition(Math::Matrix::getTranslation(relative));
+            // Note: Extracting rotation and scale from matrix is more complex
+            // This is a simplified version - you might want to implement proper decomposition
+            return result;
+        }
+    }
+
+} // namespace Engine
+
+// ========================================
+// Backward Compatibility
+// ========================================
+
+// For existing code that expects Core::Transform
+namespace Core {
+    using Transform = Engine::Transform;
+}
+
+
+
+## File: ./Engine/Core/Math.hpp
+// Math.hpp
+// Unified Math System - Consolidates all math utilities
+#pragma once
+
+#include <simd/simd.h>
+#include <cmath>
+
+namespace Engine {
+namespace Math {
+
+    // ========================================
+    // Type Definitions
+    // ========================================
+
+    using Vec2 = vector_float2;
+    using Vec3 = vector_float3;
+    using Vec4 = vector_float4;
+    using Mat4 = matrix_float4x4;
+    using Quat = simd_quatf;
+
+    // ========================================
+    // Constants
+    // ========================================
+
+    namespace Constants {
+        constexpr float PI = M_PI;
+        constexpr float TWO_PI = 2.0f * M_PI;
+        constexpr float HALF_PI = M_PI * 0.5f;
+        constexpr float DEG_TO_RAD = M_PI / 180.0f;
+        constexpr float RAD_TO_DEG = 180.0f / M_PI;
+        constexpr float EPSILON = 1e-6f;
+    }
+
+    // ========================================
+    // Utility Functions
+    // ========================================
+
+    inline float degreesToRadians(float degrees) {
+        return degrees * Constants::DEG_TO_RAD;
+    }
+
+    inline float radiansToDegrees(float radians) {
+        return radians * Constants::RAD_TO_DEG;
+    }
+
+    template<typename T>
+    inline T clamp(T value, T min, T max) {
+        return value < min ? min : (value > max ? max : value);
+    }
+
+    template<typename T>
+    inline T lerp(T a, T b, float t) {
+        return a + (b - a) * t;
+    }
+
+    inline bool isEqual(float a, float b, float epsilon = Constants::EPSILON) {
+        return std::abs(a - b) < epsilon;
+    }
+
+    // ========================================
+    // Vector Operations
+    // ========================================
+
+    namespace Vector {
+
+        // Vec2 operations
+        inline Vec2 make(float x, float y) {
+            return {x, y};
+        }
+
+        inline float dot(const Vec2& a, const Vec2& b) {
+            return simd_dot(a, b);
+        }
+
+        inline float length(const Vec2& v) {
+            return simd_length(v);
+        }
+
+        inline Vec2 normalize(const Vec2& v) {
+            return simd_normalize(v);
+        }
+
+        // Vec3 operations
+        inline Vec3 make(float x, float y, float z) {
+            return {x, y, z};
+        }
+
+        inline Vec3 normalize(const Vec3& v) {
+            float len = simd_length(v);
+            if (len < Constants::EPSILON) {
+                return Vec3{0,0,0}; // or return v; depending on what you want
+            }
+            return v / len;
+        }
+
+        inline Vec3 cross(const Vec3& a, const Vec3& b) {
+            return simd_cross(a, b);
+        }
+
+        inline float dot(const Vec3& a, const Vec3& b) {
+            return simd_dot(a, b);
+        }
+
+        inline float length(const Vec3& v) {
+            return simd_length(v);
+        }
+
+        inline float lengthSquared(const Vec3& v) {
+            return simd_length_squared(v);
+        }
+
+        inline float distance(const Vec3& a, const Vec3& b) {
+            return simd_distance(a, b);
+        }
+
+        inline Vec3 lerp(const Vec3& a, const Vec3& b, float t) {
+            return simd_mix(a, b, t);
+        }
+
+        inline Vec3 reflect(const Vec3& incident, const Vec3& normal) {
+            return simd_reflect(incident, normal);
+        }
+
+        inline Vec3 refract(const Vec3& incident, const Vec3& normal, float eta) {
+            return simd_refract(incident, normal, eta);
+        }
+
+        // Vec4 operations
+        inline Vec4 make(float x, float y, float z, float w) {
+            return {x, y, z, w};
+        }
+
+        inline Vec4 make(const Vec3& xyz, float w) {
+            return {xyz.x, xyz.y, xyz.z, w};
+        }
+
+        inline float dot(const Vec4& a, const Vec4& b) {
+            return simd_dot(a, b);
+        }
+
+        inline float length(const Vec4& v) {
+            return simd_length(v);
+        }
+
+        inline Vec4 normalize(const Vec4& v) {
+            return simd_normalize(v);
+        }
+
+        // Common vector constants
+        namespace Constants {
+            constexpr Vec3 ZERO = {0.0f, 0.0f, 0.0f};
+            constexpr Vec3 ONE = {1.0f, 1.0f, 1.0f};
+            constexpr Vec3 UP = {0.0f, 1.0f, 0.0f};
+            constexpr Vec3 DOWN = {0.0f, -1.0f, 0.0f};
+            constexpr Vec3 RIGHT = {1.0f, 0.0f, 0.0f};
+            constexpr Vec3 LEFT = {-1.0f, 0.0f, 0.0f};
+            constexpr Vec3 FORWARD = {0.0f, 0.0f, -1.0f};
+            constexpr Vec3 BACK = {0.0f, 0.0f, 1.0f};
+        }
+    }
+
+    // ========================================
+    // Matrix Operations
+    // ========================================
+
+    namespace Matrix {
+
+        inline Mat4 identity() {
+            return matrix_identity_float4x4;
+        }
+
+        inline Mat4 multiply(const Mat4& a, const Mat4& b) {
+            return simd_mul(a, b);
+        }
+
+        inline Vec4 multiply(const Mat4& m, const Vec4& v) {
+            return simd_mul(m, v);
+        }
+
+        inline Mat4 transpose(const Mat4& m) {
+            return simd_transpose(m);
+        }
+
+        inline float determinant(const Mat4& m) {
+            return simd_determinant(m);
+        }
+
+        inline Mat4 inverse(const Mat4& m) {
+            return simd_inverse(m);
+        }
+
+        // Transformation matrices
+        inline Mat4 translation(float x, float y, float z) {
+            return Mat4{{
+                {1, 0, 0, 0},
+                {0, 1, 0, 0},
+                {0, 0, 1, 0},
+                {x, y, z, 1}
+            }};
+        }
+
+        inline Mat4 translation(const Vec3& t) {
+            return translation(t.x, t.y, t.z);
+        }
+
+        inline Mat4 scale(float x, float y, float z) {
+            return Mat4{{
+                {x, 0, 0, 0},
+                {0, y, 0, 0},
+                {0, 0, z, 0},
+                {0, 0, 0, 1}
+            }};
+        }
+
+        inline Mat4 scale(const Vec3& s) {
+            return scale(s.x, s.y, s.z);
+        }
+
+        inline Mat4 scale(float uniform) {
+            return scale(uniform, uniform, uniform);
+        }
+
+        inline Mat4 rotationX(float radians) {
+            float c = cosf(radians);
+            float s = sinf(radians);
+            return Mat4{{
+                {1, 0,  0, 0},
+                {0, c, -s, 0},
+                {0, s,  c, 0},
+                {0, 0,  0, 1}
+            }};
+        }
+
+        inline Mat4 rotationY(float radians) {
+            float c = cosf(radians);
+            float s = sinf(radians);
+            return Mat4{{
+                { c, 0, -s, 0},
+                { 0, 1,  0, 0},
+                { s, 0,  c, 0},
+                { 0, 0,  0, 1}
+            }};
+        }
+
+        inline Mat4 rotationZ(float radians) {
+            float c = cosf(radians);
+            float s = sinf(radians);
+            return Mat4{{
+                { c, -s, 0, 0},
+                { s,  c, 0, 0},
+                { 0,  0, 1, 0},
+                { 0,  0, 0, 1}
+            }};
+        }
+
+        inline Mat4 rotation(float x, float y, float z) {
+            return multiply(rotationZ(z), multiply(rotationY(y), rotationX(x)));
+        }
+
+        inline Mat4 rotation(const Vec3& euler) {
+            return rotation(euler.x, euler.y, euler.z);
+        }
+
+        // View and projection matrices
+        inline Mat4 lookAt(const Vec3& eye, const Vec3& center, const Vec3& up) {
+            Vec3 f = Vector::normalize(center - eye);
+            Vec3 r = Vector::normalize(Vector::cross(f, up));
+            Vec3 u = Vector::cross(r, f);
+
+            return Mat4{{
+                { r.x, u.x, -f.x, 0},
+                { r.y, u.y, -f.y, 0},
+                { r.z, u.z, -f.z, 0},
+                {-Vector::dot(r, eye), -Vector::dot(u, eye), Vector::dot(f, eye), 1}
+            }};
+        }
+
+        inline Mat4 perspective(float fovYRadians, float aspect, float nearZ, float farZ) {
+            float f = 1.0f / tanf(fovYRadians * 0.5f);
+            float nf = nearZ - farZ;
+            return Mat4{{
+                {f/aspect, 0,            0,               0},
+                {0,        f,            0,               0},
+                {0,        0,   farZ/nf,                -1},
+                {0,        0, (farZ*nearZ)/nf,           0}
+            }};
+        }
+
+        inline Mat4 perspectiveDegrees(float fovYDegrees, float aspect, float nearZ, float farZ) {
+            return perspective(degreesToRadians(fovYDegrees), aspect, nearZ, farZ);
+        }
+
+        inline Mat4 orthographic(float left, float right, float bottom, float top,
+                                float nearZ, float farZ) {
+            float rl = right - left;
+            float tb = top - bottom;
+            float fn = farZ - nearZ;
+
+            return Mat4{{
+                {2.0f/rl,        0,          0,       0},
+                {0,         2.0f/tb,          0,       0},
+                {0,              0,    -2.0f/fn,       0},
+                {-(right+left)/rl, -(top+bottom)/tb, -(farZ+nearZ)/fn, 1}
+            }};
+        }
+
+        // Component extraction
+        inline Vec3 getTranslation(const Mat4& m) {
+            return Vec3{m.columns[3].x, m.columns[3].y, m.columns[3].z};
+        }
+
+        inline Vec3 getScale(const Mat4& m) {
+            return Vec3{
+                Vector::length(Vec3{m.columns[0].x, m.columns[0].y, m.columns[0].z}),
+                Vector::length(Vec3{m.columns[1].x, m.columns[1].y, m.columns[1].z}),
+                Vector::length(Vec3{m.columns[2].x, m.columns[2].y, m.columns[2].z})
+            };
+        }
+
+        inline Vec3 getRight(const Mat4& m) {
+            return Vector::normalize(Vec3{m.columns[0].x, m.columns[0].y, m.columns[0].z});
+        }
+
+        inline Vec3 getUp(const Mat4& m) {
+            return Vector::normalize(Vec3{m.columns[1].x, m.columns[1].y, m.columns[1].z});
+        }
+
+        inline Vec3 getForward(const Mat4& m) {
+            return Vector::normalize(Vec3{-m.columns[2].x, -m.columns[2].y, -m.columns[2].z});
+        }
+    }
+
+    // ========================================
+    // Quaternion Operations
+    // ========================================
+
+    namespace Quaternion {
+
+        inline Quat identity() {
+            return simd_quaternion(0.0f, 0.0f, 0.0f, 1.0f);
+        }
+
+        inline Quat make(float x, float y, float z, float w) {
+            return simd_quaternion(x, y, z, w);
+        }
+
+        inline Quat fromAxisAngle(const Vec3& axis, float angle) {
+            float halfAngle = angle * 0.5f;
+            float s = sinf(halfAngle);
+            Vec3 normalizedAxis = Vector::normalize(axis);
+            return simd_quaternion(
+                normalizedAxis.x * s,
+                normalizedAxis.y * s,
+                normalizedAxis.z * s,
+                cosf(halfAngle)
+            );
+        }
+
+        inline Quat fromEuler(float pitch, float yaw, float roll) {
+            float cy = cosf(yaw * 0.5f);
+            float sy = sinf(yaw * 0.5f);
+            float cp = cosf(pitch * 0.5f);
+            float sp = sinf(pitch * 0.5f);
+            float cr = cosf(roll * 0.5f);
+            float sr = sinf(roll * 0.5f);
+
+            return simd_quaternion(
+                sr * cp * cy - cr * sp * sy,
+                cr * sp * cy + sr * cp * sy,
+                cr * cp * sy - sr * sp * cy,
+                cr * cp * cy + sr * sp * sy
+            );
+        }
+
+        inline Quat fromEulerDegrees(float pitch, float yaw, float roll) {
+            return fromEuler(
+                degreesToRadians(pitch),
+                degreesToRadians(yaw),
+                degreesToRadians(roll)
+            );
+        }
+
+        inline Mat4 toMatrix(const Quat& q) {
+            return simd_matrix4x4(q);
+        }
+
+        inline Quat multiply(const Quat& a, const Quat& b) {
+            return simd_mul(a, b);
+        }
+
+        inline Quat conjugate(const Quat& q) {
+            return simd_conjugate(q);
+        }
+
+        inline Quat inverse(const Quat& q) {
+            return simd_inverse(q);
+        }
+
+        inline float length(const Quat& q) {
+            return simd_length(q);
+        }
+
+        inline Quat normalize(const Quat& q) {
+            return simd_normalize(q);
+        }
+
+        inline Quat slerp(const Quat& a, const Quat& b, float t) {
+            return simd_slerp(a, b, t);
+        }
+
+        inline float dot(const Quat& a, const Quat& b) {
+            return simd_dot(a, b);
+        }
+
+        inline Vec3 rotateVector(const Quat& q, const Vec3& v) {
+            return simd_act(q, v);
+        }
+
+        // Convert quaternion to Euler angles (in radians)
+        inline Vec3 toEuler(const Quat& q) {
+            Vec3 angles;
+
+            // Roll (x-axis rotation)
+            float sinr_cosp = 2 * (q.vector.w * q.vector.x + q.vector.y * q.vector.z);
+            float cosr_cosp = 1 - 2 * (q.vector.x * q.vector.x + q.vector.y * q.vector.y);
+            angles.x = atan2f(sinr_cosp, cosr_cosp);
+
+            // Pitch (y-axis rotation)
+            float sinp = 2 * (q.vector.w * q.vector.y - q.vector.z * q.vector.x);
+            if (std::abs(sinp) >= 1)
+                angles.y = copysignf(Constants::HALF_PI, sinp); // Use 90 degrees if out of range
+            else
+                angles.y = asinf(sinp);
+
+            // Yaw (z-axis rotation)
+            float siny_cosp = 2 * (q.vector.w * q.vector.z + q.vector.x * q.vector.y);
+            float cosy_cosp = 1 - 2 * (q.vector.y * q.vector.y + q.vector.z * q.vector.z);
+            angles.z = atan2f(siny_cosp, cosy_cosp);
+
+            return angles;
+        }
+
+        inline Vec3 toEulerDegrees(const Quat& q) {
+            Vec3 radians = toEuler(q);
+            return Vec3{
+                radiansToDegrees(radians.x),
+                radiansToDegrees(radians.y),
+                radiansToDegrees(radians.z)
+            };
+        }
+    }
+
+    // ========================================
+    // Backward Compatibility Wrappers
+    // ========================================
+
+    // For existing code that uses the old Matrix4 class
+    class Matrix4 {
+    public:
+        static Mat4 perspective(float fovYRadians, float aspect, float nearZ, float farZ) {
+            return Matrix::perspective(fovYRadians, aspect, nearZ, farZ);
+        }
+
+        static Mat4 translation(float x, float y, float z) {
+            return Matrix::translation(x, y, z);
+        }
+
+        static Mat4 rotationY(float radians) {
+            return Matrix::rotationY(radians);
+        }
+
+        static Mat4 rotationX(float radians) {
+            return Matrix::rotationX(radians);
+        }
+
+        static Mat4 scale(float x, float y, float z) {
+            return Matrix::scale(x, y, z);
+        }
+
+        static Mat4 multiply(const Mat4& a, const Mat4& b) {
+            return Matrix::multiply(a, b);
+        }
+
+        static Mat4 identity() {
+            return Matrix::identity();
+        }
+    };
+
+} // namespace Math
+} // namespace Engine
+
+// ========================================
+// Global namespace aliases for convenience
+// ========================================
+
+// Alias the Engine::Math namespace to global Math for backward compatibility
+namespace Math = Engine::Math;
+
+
+
+## File: ./Engine/Graphics/GeometryBuilder.hpp
+// Engine/Graphics/GeometryBuilder.hpp
+// UPDATED VERSION - Modern geometry builder using the new graphics abstraction
+#pragma once
+
+#include <vector>
+
+namespace Engine {
+namespace Graphics {
+
+    // ========================================
+    // Modern Vertex Structure
+    // ========================================
+
+    struct Vertex {
+        Math::Vec3 position;
+        Math::Vec3 color;
+        Math::Vec3 normal;
+        Math::Vec2 texCoord;
+        
+        Vertex() = default;
+        Vertex(const Math::Vec3& pos, const Math::Vec3& col = {1,1,1}, const Math::Vec3& norm = {0,1,0}, const Math::Vec2& tex = {0,0})
+            : position(pos), color(col), normal(norm), texCoord(tex) {}
+    };
+
+    // ========================================
+    // Mesh Data Container
+    // ========================================
+
+    struct MeshData {
+        std::vector<Vertex> vertices;
+        std::vector<uint16_t> indices;
+        PrimitiveType primitiveType = PrimitiveType::Triangles;
+        
+        // Helper methods
+        void clear() {
+            vertices.clear();
+            indices.clear();
+        }
+        
+        size_t getVertexDataSize() const {
+            return vertices.size() * sizeof(Vertex);
+        }
+        
+        size_t getIndexDataSize() const {
+            return indices.size() * sizeof(uint16_t);
+        }
+        
+        bool isEmpty() const {
+            return vertices.empty() || indices.empty();
+        }
+    };
+
+    // ========================================
+    // High-Level Mesh Class
+    // ========================================
+
+    class Mesh {
+    public:
+        Mesh(RenderDevicePtr device, const MeshData& meshData);
+        ~Mesh() = default;
+
+        void draw(CommandBufferPtr cmd);
+        void updateVertices(const std::vector<Vertex>& vertices);
+        void updateIndices(const std::vector<uint16_t>& indices);
+
+        BufferPtr getVertexBuffer() const { return vertexBuffer_; }
+        BufferPtr getIndexBuffer() const { return indexBuffer_; }
+        uint32_t getIndexCount() const { return indexCount_; }
+        PrimitiveType getPrimitiveType() const { return primitiveType_; }
+
+    private:
+        RenderDevicePtr device_;
+        BufferPtr vertexBuffer_;
+        BufferPtr indexBuffer_;
+        uint32_t indexCount_;
+        PrimitiveType primitiveType_;
+    };
+
+    using MeshPtr = std::shared_ptr<Mesh>;
+
+    // ========================================
+    // Modern GeometryBuilder
+    // ========================================
+
+    class GeometryBuilder {
+    public:
+        // ========================================
+        // Basic Shapes
+        // ========================================
+
+        static MeshData createCube(float size = 1.0f) {
+            MeshData meshData;
+            float h = size * 0.5f;
+
+            // Define cube corners
+            Math::Vec3 corners[8] = {
+                {-h, -h, -h}, { h, -h, -h}, { h,  h, -h}, {-h,  h, -h},  // Front face
+                {-h, -h,  h}, { h, -h,  h}, { h,  h,  h}, {-h,  h,  h}   // Back face
+            };
+
+            // Face definitions [vertex indices for each face]
+            int faces[6][4] = {
+                {0, 1, 2, 3}, // Front (-Z)
+                {5, 4, 7, 6}, // Back (+Z)
+                {4, 0, 3, 7}, // Left (-X)
+                {1, 5, 6, 2}, // Right (+X)
+                {3, 2, 6, 7}, // Top (+Y)
+                {4, 5, 1, 0}  // Bottom (-Y)
+            };
+
+            // Face colors
+            Math::Vec3 colors[6] = {
+                {1.0f, 0.0f, 0.0f}, // Red
+                {0.0f, 1.0f, 0.0f}, // Green
+                {0.0f, 0.0f, 1.0f}, // Blue
+                {1.0f, 1.0f, 0.0f}, // Yellow
+                {1.0f, 0.0f, 1.0f}, // Magenta
+                {0.0f, 1.0f, 1.0f}  // Cyan
+            };
+
+            // Face normals
+            Math::Vec3 normals[6] = {
+                { 0,  0, -1}, // Front
+                { 0,  0,  1}, // Back
+                {-1,  0,  0}, // Left
+                { 1,  0,  0}, // Right
+                { 0,  1,  0}, // Top
+                { 0, -1,  0}  // Bottom
+            };
+
+            // Build vertices and indices for each face
+            for (int f = 0; f < 6; ++f) {
+                uint16_t baseIndex = static_cast<uint16_t>(meshData.vertices.size());
+
+                // Add 4 vertices for this face
+                for (int v = 0; v < 4; ++v) {
+                    Vertex vertex;
+                    vertex.position = corners[faces[f][v]];
+                    vertex.color = colors[f];
+                    vertex.normal = normals[f];
+                    
+                    // Simple UV mapping
+                    vertex.texCoord = {
+                        (v == 1 || v == 2) ? 1.0f : 0.0f,
+                        (v == 2 || v == 3) ? 1.0f : 0.0f
+                    };
+
+                    meshData.vertices.push_back(vertex);
+                }
+
+                // Add two triangles for this face
+                meshData.indices.insert(meshData.indices.end(), {
+                    static_cast<uint16_t>(baseIndex + 0),
+                    static_cast<uint16_t>(baseIndex + 1),
+                    static_cast<uint16_t>(baseIndex + 2),
+                    
+                    static_cast<uint16_t>(baseIndex + 0),
+                    static_cast<uint16_t>(baseIndex + 2),
+                    static_cast<uint16_t>(baseIndex + 3)
+                });
+            }
+
+            return meshData;
+        }
+
+        static MeshData createSphere(float radius = 1.0f, int segments = 32, int rings = 16) {
+            MeshData meshData;
+
+            // Generate vertices
+            for (int ring = 0; ring <= rings; ++ring) {
+                float theta = Math::Constants::PI * ring / rings;
+                float sinTheta = sinf(theta);
+                float cosTheta = cosf(theta);
+
+                for (int seg = 0; seg <= segments; ++seg) {
+                    float phi = 2.0f * Math::Constants::PI * seg / segments;
+                    float sinPhi = sinf(phi);
+                    float cosPhi = cosf(phi);
+
+                    Vertex vertex;
+                    vertex.position = {
+                        radius * sinTheta * cosPhi,
+                        radius * cosTheta,
+                        radius * sinTheta * sinPhi
+                    };
+
+                    // Normal is just normalized position for a sphere
+                    vertex.normal = Math::Vector::normalize(vertex.position);
+
+                    // Color based on position (creates gradient effect)
+                    vertex.color = {
+                        (vertex.position.x + radius) / (2.0f * radius),
+                        (vertex.position.y + radius) / (2.0f * radius),
+                        (vertex.position.z + radius) / (2.0f * radius)
+                    };
+
+                    // UV mapping
+                    vertex.texCoord = {
+                        static_cast<float>(seg) / segments,
+                        static_cast<float>(ring) / rings
+                    };
+
+                    meshData.vertices.push_back(vertex);
+                }
+            }
+
+            // Generate indices
+            for (int ring = 0; ring < rings; ++ring) {
+                for (int seg = 0; seg < segments; ++seg) {
+                    uint16_t first = ring * (segments + 1) + seg;
+                    uint16_t second = first + segments + 1;
+
+                    // First triangle
+                    meshData.indices.insert(meshData.indices.end(), {
+                        first, second, static_cast<uint16_t>(first + 1)
+                    });
+
+                    // Second triangle
+                    meshData.indices.insert(meshData.indices.end(), {
+                        second, static_cast<uint16_t>(second + 1), static_cast<uint16_t>(first + 1)
+                    });
+                }
+            }
+
+            return meshData;
+        }
+
+        static MeshData createPlane(float width = 10.0f, float depth = 10.0f, int subdivisions = 1) {
+            MeshData meshData;
+
+            int verticesPerSide = subdivisions + 2;
+            float stepX = width / (subdivisions + 1);
+            float stepZ = depth / (subdivisions + 1);
+
+            // Generate vertices
+            for (int z = 0; z < verticesPerSide; ++z) {
+                for (int x = 0; x < verticesPerSide; ++x) {
+                    Vertex vertex;
+                    vertex.position = {
+                        -width/2.0f + x * stepX,
+                        0.0f,
+                        -depth/2.0f + z * stepZ
+                    };
+                    vertex.normal = {0, 1, 0};
+                    vertex.color = {0.5f, 0.5f, 0.5f};
+                    vertex.texCoord = {
+                        static_cast<float>(x) / (verticesPerSide - 1),
+                        static_cast<float>(z) / (verticesPerSide - 1)
+                    };
+                    meshData.vertices.push_back(vertex);
+                }
+            }
+
+            // Generate indices
+            for (int z = 0; z < verticesPerSide - 1; ++z) {
+                for (int x = 0; x < verticesPerSide - 1; ++x) {
+                    uint16_t topLeft = z * verticesPerSide + x;
+                    uint16_t topRight = topLeft + 1;
+                    uint16_t bottomLeft = topLeft + verticesPerSide;
+                    uint16_t bottomRight = bottomLeft + 1;
+
+                    // First triangle
+                    meshData.indices.insert(meshData.indices.end(), {
+                        topLeft, bottomLeft, topRight
+                    });
+
+                    // Second triangle
+                    meshData.indices.insert(meshData.indices.end(), {
+                        topRight, bottomLeft, bottomRight
+                    });
+                }
+            }
+
+            return meshData;
+        }
+
+        // ========================================
+        // Advanced Shapes
+        // ========================================
+
+        static MeshData createCylinder(float radius = 1.0f, float height = 2.0f, int segments = 32) {
+            MeshData meshData;
+
+            float halfHeight = height * 0.5f;
+
+            // Generate side vertices
+            for (int i = 0; i <= segments; ++i) {
+                float angle = 2.0f * Math::Constants::PI * i / segments;
+                float x = radius * cosf(angle);
+                float z = radius * sinf(angle);
+
+                // Bottom vertex
+                Vertex bottomVertex;
+                bottomVertex.position = {x, -halfHeight, z};
+                bottomVertex.normal = Math::Vector::normalize(Math::Vec3{x, 0, z});
+                bottomVertex.color = {0.7f, 0.7f, 0.7f};
+                bottomVertex.texCoord = {static_cast<float>(i) / segments, 0.0f};
+                meshData.vertices.push_back(bottomVertex);
+
+                // Top vertex
+                Vertex topVertex;
+                topVertex.position = {x, halfHeight, z};
+                topVertex.normal    = Math::Vector::normalize(Math::Vec3{x, 0, z});
+                topVertex.color = {0.9f, 0.9f, 0.9f};
+                topVertex.texCoord = {static_cast<float>(i) / segments, 1.0f};
+                meshData.vertices.push_back(topVertex);
+            }
+
+            // Generate side indices
+            for (int i = 0; i < segments; ++i) {
+                uint16_t bottomLeft = i * 2;
+                uint16_t topLeft = bottomLeft + 1;
+                uint16_t bottomRight = (i + 1) * 2;
+                uint16_t topRight = bottomRight + 1;
+
+                // First triangle
+                meshData.indices.insert(meshData.indices.end(), {
+                    bottomLeft, topLeft, bottomRight
+                });
+
+                // Second triangle
+                meshData.indices.insert(meshData.indices.end(), {
+                    bottomRight, topLeft, topRight
+                });
+            }
+
+            return meshData;
+        }
+
+        // ========================================
+        // Utility Methods
+        // ========================================
+
+        static MeshData createFromVertices(const std::vector<Math::Vec3>& positions,
+                                         const Math::Vec3& color = {1, 1, 1}) {
+            MeshData meshData;
+
+            for (const auto& pos : positions) {
+                Vertex vertex;
+                vertex.position = pos;
+                vertex.color = color;
+                vertex.normal = {0, 1, 0}; // Default normal
+                vertex.texCoord = {0, 0}; // Default UV
+                meshData.vertices.push_back(vertex);
+            }
+
+            // Create indices for triangles
+            for (size_t i = 0; i < positions.size(); i += 3) {
+                if (i + 2 < positions.size()) {
+                    meshData.indices.insert(meshData.indices.end(), {
+                        static_cast<uint16_t>(i),
+                        static_cast<uint16_t>(i + 1),
+                        static_cast<uint16_t>(i + 2)
+                    });
+                }
+            }
+
+            return meshData;
+        }
+
+        static void calculateNormals(MeshData& meshData) {
+            // Reset all normals to zero
+            for (auto& vertex : meshData.vertices) {
+                vertex.normal = {0, 0, 0};
+            }
+
+            // Calculate face normals and accumulate
+            for (size_t i = 0; i < meshData.indices.size(); i += 3) {
+                if (i + 2 < meshData.indices.size()) {
+                    uint16_t i0 = meshData.indices[i];
+                    uint16_t i1 = meshData.indices[i + 1];
+                    uint16_t i2 = meshData.indices[i + 2];
+
+                    if (i0 < meshData.vertices.size() &&
+                        i1 < meshData.vertices.size() &&
+                        i2 < meshData.vertices.size()) {
+
+                        const Math::Vec3& v0 = meshData.vertices[i0].position;
+                        const Math::Vec3& v1 = meshData.vertices[i1].position;
+                        const Math::Vec3& v2 = meshData.vertices[i2].position;
+
+                        Math::Vec3 edge1 = v1 - v0;
+                        Math::Vec3 edge2 = v2 - v0;
+                        Math::Vec3 faceNormal = Math::Vector::cross(edge1, edge2);
+
+                        meshData.vertices[i0].normal += faceNormal;
+                        meshData.vertices[i1].normal += faceNormal;
+                        meshData.vertices[i2].normal += faceNormal;
+                    }
+                }
+            }
+
+            // Normalize all vertex normals
+            for (auto& vertex : meshData.vertices) {
+                vertex.normal = Math::Vector::normalize(vertex.normal);
+            }
+        }
+
+        static void generateTangents(MeshData& meshData) {
+            // Simplified tangent generation
+            // In a full implementation, this would calculate proper tangent vectors for normal mapping
+            for (auto& vertex : meshData.vertices) {
+                // Create a tangent perpendicular to the normal
+                Math::Vec3 up = (abs(vertex.normal.y) < 0.9f) ?
+                    Math::Vec3{0, 1, 0} : Math::Vec3{1, 0, 0};
+                Math::Vec3 tangent = Math::Vector::normalize(Math::Vector::cross(vertex.normal, up));
+                // Store tangent in unused vertex data if needed
+            }
+        }
+
+        // ========================================
+        // Mesh Factory Functions
+        // ========================================
+
+        static MeshPtr createCubeMesh(RenderDevicePtr device, float size = 1.0f) {
+            MeshData meshData = createCube(size);
+            return std::make_shared<Mesh>(device, meshData);
+        }
+
+        static MeshPtr createSphereMesh(RenderDevicePtr device, float radius = 1.0f, int segments = 32, int rings = 16) {
+            MeshData meshData = createSphere(radius, segments, rings);
+            return std::make_shared<Mesh>(device, meshData);
+        }
+
+        static MeshPtr createPlaneMesh(RenderDevicePtr device, float width = 10.0f, float depth = 10.0f, int subdivisions = 1) {
+            MeshData meshData = createPlane(width, depth, subdivisions);
+            return std::make_shared<Mesh>(device, meshData);
+        }
+
+        static MeshPtr createCylinderMesh(RenderDevicePtr device, float radius = 1.0f, float height = 2.0f, int segments = 32) {
+            MeshData meshData = createCylinder(radius, height, segments);
+            return std::make_shared<Mesh>(device, meshData);
+        }
+    };
+
+    // ========================================
+    // Mesh Implementation
+    // ========================================
+
+    inline Mesh::Mesh(RenderDevicePtr device, const MeshData& meshData)
+        : device_(device), indexCount_(static_cast<uint32_t>(meshData.indices.size())), primitiveType_(meshData.primitiveType) {
+
+        if (meshData.isEmpty()) {
+            throw std::runtime_error("Cannot create mesh from empty mesh data");
+        }
+
+        // Create vertex buffer
+        vertexBuffer_ = device_->createBuffer(
+            BufferType::Vertex,
+            BufferUsage::Static,
+            meshData.getVertexDataSize(),
+            meshData.vertices.data()
+        );
+
+        // Create index buffer
+        indexBuffer_ = device_->createBuffer(
+            BufferType::Index,
+            BufferUsage::Static,
+            meshData.getIndexDataSize(),
+            meshData.indices.data()
+        );
+
+        if (!vertexBuffer_ || !indexBuffer_) {
+            throw std::runtime_error("Failed to create mesh buffers");
+        }
+    }
+
+    inline void Mesh::draw(CommandBufferPtr cmd) {
+        cmd->setVertexBuffer(vertexBuffer_, 0);
+        cmd->setIndexBuffer(indexBuffer_);
+        cmd->drawIndexed(primitiveType_, indexCount_);
+    }
+
+    inline void Mesh::updateVertices(const std::vector<Vertex>& vertices) {
+        if (vertices.size() * sizeof(Vertex) <= vertexBuffer_->getSize()) {
+            vertexBuffer_->update(vertices.data(), vertices.size() * sizeof(Vertex));
+        } else {
+            // Recreate buffer if size changed
+            vertexBuffer_ = device_->createBuffer(
+                BufferType::Vertex,
+                BufferUsage::Dynamic,
+                vertices.size() * sizeof(Vertex),
+                vertices.data()
+            );
+        }
+    }
+
+    inline void Mesh::updateIndices(const std::vector<uint16_t>& indices) {
+        indexCount_ = static_cast<uint32_t>(indices.size());
+
+        if (indices.size() * sizeof(uint16_t) <= indexBuffer_->getSize()) {
+            indexBuffer_->update(indices.data(), indices.size() * sizeof(uint16_t));
+        } else {
+            // Recreate buffer if size changed
+            indexBuffer_ = device_->createBuffer(
+                BufferType::Index,
+                BufferUsage::Dynamic,
+                indices.size() * sizeof(uint16_t),
+                indices.data()
+            );
+        }
+    }
+
+} // namespace Graphics
+} // namespace Engine
+
+
+
+## File: ./Engine/Graphics/Metal/MetalRenderDevice.hpp
+// Engine/Graphics/Metal/MetalRenderDevice.hpp
+// NEW FILE - Metal-specific implementation of RenderDevice
+#pragma once
+
+#include "../RenderDevice.hpp"
+#include <Metal/Metal.h>
+#include <QuartzCore/CAMetalLayer.h>
+
+namespace Engine {
+namespace Graphics {
+namespace Metal {
+
+    // Forward declarations for Metal-specific classes
+    class MetalBuffer;
+    class MetalTexture;
+    class MetalShader;
+    class MetalPipeline;
+    class MetalCommandBuffer;
+
+    // ========================================
+    // Metal Buffer Implementation
+    // ========================================
+
+    class MetalBuffer : public Buffer {
+    public:
+        MetalBuffer(id<MTLDevice> device, BufferType type, BufferUsage usage, size_t size, const void* data);
+        ~MetalBuffer() override = default;
+
+        void* map() override;
+        void unmap() override;
+        void update(const void* data, size_t size, size_t offset = 0) override;
+
+        size_t getSize() const override { return size_; }
+        BufferType getType() const override { return type_; }
+        BufferUsage getUsage() const override { return usage_; }
+
+        id<MTLBuffer> getMetalBuffer() const { return buffer_; }
+
+    private:
+        id<MTLBuffer> buffer_;
+        BufferType type_;
+        BufferUsage usage_;
+        size_t size_;
+        bool isMapped_;
+    };
+
+    // ========================================
+    // Metal Texture Implementation
+    // ========================================
+
+    class MetalTexture : public Texture {
+    public:
+        MetalTexture(id<MTLDevice> device, uint32_t width, uint32_t height, TextureFormat format, TextureUsage usage, const void* data);
+        ~MetalTexture() override = default;
+
+        uint32_t getWidth() const override { return width_; }
+        uint32_t getHeight() const override { return height_; }
+        uint32_t getDepth() const override { return 1; }
+        TextureFormat getFormat() const override { return format_; }
+        TextureUsage getUsage() const override { return usage_; }
+
+        void update(const void* data, size_t size) override;
+
+        id<MTLTexture> getMetalTexture() const { return texture_; }
+
+        static MTLPixelFormat toMetalFormat(TextureFormat format);
+
+    private:
+        id<MTLTexture> texture_;
+        uint32_t width_;
+        uint32_t height_;
+        TextureFormat format_;
+        TextureUsage usage_;
+    };
+
+    // ========================================
+    // Metal Shader Implementation
+    // ========================================
+
+    class MetalShader : public Shader {
+    public:
+        MetalShader(id<MTLDevice> device, ShaderStage stage, const std::string& source, const std::string& name);
+        ~MetalShader() override = default;
+
+        ShaderStage getStage() const override { return stage_; }
+        const std::string& getName() const override { return name_; }
+        bool isValid() const override { return function_ != nil; }
+
+        id<MTLFunction> getMetalFunction() const { return function_; }
+
+    private:
+        id<MTLFunction> function_;
+        ShaderStage stage_;
+        std::string name_;
+    };
+
+    // ========================================
+    // Metal Pipeline Implementation
+    // ========================================
+
+    class MetalPipeline : public Pipeline {
+    public:
+        MetalPipeline(id<MTLDevice> device, const PipelineDescriptor& descriptor);
+        ~MetalPipeline() override = default;
+
+        const PipelineDescriptor& getDescriptor() const override { return descriptor_; }
+        bool isValid() const override { return renderPipelineState_ != nil; }
+
+        id<MTLRenderPipelineState> getMetalPipelineState() const { return renderPipelineState_; }
+        id<MTLDepthStencilState> getDepthStencilState() const { return depthStencilState_; }
+
+        static MTLVertexDescriptor* createMetalVertexDescriptor(const VertexLayout& layout);
+
+    private:
+        id<MTLRenderPipelineState> renderPipelineState_;
+        id<MTLDepthStencilState> depthStencilState_;
+        PipelineDescriptor descriptor_;
+    };
+
+    // ========================================
+    // Metal Command Buffer Implementation
+    // ========================================
+
+    class MetalCommandBuffer : public CommandBuffer {
+    public:
+        MetalCommandBuffer(id<MTLCommandBuffer> commandBuffer, id<MTLRenderCommandEncoder> encoder);
+        ~MetalCommandBuffer() override = default;
+
+        // Render state
+        void setViewport(int x, int y, int width, int height) override;
+        void setScissor(int x, int y, int width, int height) override;
+        void setPipeline(PipelinePtr pipeline) override;
+
+        // Resource binding
+        void setVertexBuffer(BufferPtr buffer, uint32_t slot = 0) override;
+        void setIndexBuffer(BufferPtr buffer) override;
+        void setUniformBuffer(BufferPtr buffer, uint32_t slot) override;
+        void setTexture(TexturePtr texture, uint32_t slot) override;
+        void setSamplerState(const SamplerState& sampler, uint32_t slot) override;
+
+        // Drawing commands
+        void draw(PrimitiveType primitive, uint32_t vertexCount, uint32_t firstVertex = 0) override;
+        void drawIndexed(PrimitiveType primitive, uint32_t indexCount, uint32_t firstIndex = 0, int32_t vertexOffset = 0) override;
+        void drawInstanced(PrimitiveType primitive, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex = 0, uint32_t firstInstance = 0) override;
+
+        // Uniform updates
+        void setUniform(const std::string& name, float value) override;
+        void setUniform(const std::string& name, const Math::Vec2& value) override;
+        void setUniform(const std::string& name, const Math::Vec3& value) override;
+        void setUniform(const std::string& name, const Math::Vec4& value) override;
+        void setUniform(const std::string& name, const Math::Mat4& value) override;
+
+        id<MTLCommandBuffer> getMetalCommandBuffer() const { return commandBuffer_; }
+        id<MTLRenderCommandEncoder> getMetalEncoder() const { return encoder_; }
+
+        static MTLPrimitiveType toMetalPrimitiveType(PrimitiveType type);
+
+    private:
+        id<MTLCommandBuffer> commandBuffer_;
+        id<MTLRenderCommandEncoder> encoder_;
+        std::shared_ptr<MetalPipeline> currentPipeline_;
+        id<MTLBuffer> indexBuffer_;
+    };
+
+    // ========================================
+    // Metal RenderDevice Implementation
+    // ========================================
+
+    class MetalRenderDevice : public RenderDevice {
+    public:
+        MetalRenderDevice(id<MTLDevice> device, CAMetalLayer* layer);
+        ~MetalRenderDevice() override = default;
+
+        // Device information
+        const std::string& getDeviceName() const override { return deviceName_; }
+        bool isValid() const override { return device_ != nil; }
+
+        // Resource creation
+        BufferPtr createBuffer(BufferType type, BufferUsage usage, size_t size, const void* data = nullptr) override;
+        TexturePtr createTexture(uint32_t width, uint32_t height, TextureFormat format, TextureUsage usage, const void* data = nullptr) override;
+        ShaderPtr createShader(ShaderStage stage, const std::string& source, const std::string& name = "") override;
+        PipelinePtr createPipeline(const PipelineDescriptor& descriptor) override;
+
+        // Frame management
+        void beginFrame() override;
+        void endFrame() override;
+        void present() override;
+
+        // Render pass management
+        CommandBufferPtr beginRenderPass(const RenderPassDescriptor& descriptor) override;
+        void endRenderPass(CommandBufferPtr commandBuffer) override;
+
+        // Default framebuffer access
+        TexturePtr getBackBuffer() override;
+        TexturePtr getDepthBuffer() override;
+        void resizeBackBuffer(uint32_t width, uint32_t height) override;
+
+        // Device capabilities
+        uint32_t getMaxTextureSize() const override;
+        uint32_t getMaxVertexAttributes() const override;
+        bool supportsComputeShaders() const override { return true; }
+        bool supportsGeometryShaders() const override { return false; }
+
+        // Debug and profiling
+        void setDebugName(const std::string& name) override;
+        void beginDebugGroup(const std::string& name) override;
+        void endDebugGroup() override;
+
+        // Metal-specific access
+        id<MTLDevice> getMetalDevice() const { return device_; }
+        CAMetalLayer* getMetalLayer() const { return layer_; }
+
+    private:
+        void createDepthBuffer();
+
+        id<MTLDevice> device_;
+        id<MTLCommandQueue> commandQueue_;
+        CAMetalLayer* layer_;
+
+        id<MTLCommandBuffer> currentCommandBuffer_;
+        id<CAMetalDrawable> currentDrawable_;
+
+        TexturePtr depthBuffer_;
+        std::string deviceName_;
+
+        uint32_t frameWidth_;
+        uint32_t frameHeight_;
+    };
+
+    // ========================================
+    // Metal RenderDevice Factory
+    // ========================================
+
+    RenderDevicePtr createMetalRenderDevice(id<MTLDevice> device, CAMetalLayer* layer);
+
+} // namespace Metal
+} // namespace Graphics
+} // namespace Engine
+
+
+## File: ./Engine/Graphics/RenderDevice.hpp
+// Engine/Graphics/RenderDevice.hpp
+#pragma once
+
+#include "../Core/Math.hpp"
+
+#include <memory>
+#include <vector>
+#include <string>
+#include <functional>
+
+namespace Engine {
+namespace Graphics {
+
+    // Forward declarations
+    class Buffer;
+    class Texture;
+    class Shader;
+    class Pipeline;
+    class CommandBuffer;
+
+    // Smart pointer aliases
+    using BufferPtr = std::shared_ptr<Buffer>;
+    using TexturePtr = std::shared_ptr<Texture>;
+    using ShaderPtr = std::shared_ptr<Shader>;
+    using PipelinePtr = std::shared_ptr<Pipeline>;
+    using CommandBufferPtr = std::shared_ptr<CommandBuffer>;
+
+    // ========================================
+    // Vertex Format Definitions
+    // ========================================
+
+    enum class VertexFormat {
+        Float,
+        Float2,
+        Float3,
+        Float4,
+        UInt,
+        UInt2,
+        UInt3,
+        UInt4
+    };
+
+    struct VertexAttribute {
+        std::string name;
+        VertexFormat format;
+        uint32_t offset;
+        uint32_t bufferIndex = 0;
+    };
+
+    struct VertexLayout {
+        std::vector<VertexAttribute> attributes;
+        uint32_t stride;
+
+        // Common vertex layouts
+        static VertexLayout Position3D();
+        static VertexLayout PositionColor();
+        static VertexLayout PositionNormalTexCoord();
+        static VertexLayout PositionColorNormalTexCoord();
+    };
+
+    // ========================================
+    // Render State Definitions
+    // ========================================
+
+    enum class CullMode {
+        None,
+        Front,
+        Back
+    };
+
+    enum class WindingOrder {
+        Clockwise,
+        CounterClockwise
+    };
+
+    enum class CompareFunction {
+        Never,
+        Less,
+        Equal,
+        LessEqual,
+        Greater,
+        NotEqual,
+        GreaterEqual,
+        Always
+    };
+
+    enum class BlendMode {
+        Opaque,
+        AlphaBlend,
+        Additive,
+        Multiply
+    };
+
+    struct RenderState {
+        CullMode cullMode = CullMode::Back;
+        WindingOrder windingOrder = WindingOrder::CounterClockwise;
+        CompareFunction depthFunction = CompareFunction::Less;
+        bool depthWriteEnabled = true;
+        bool depthTestEnabled = true;
+        BlendMode blendMode = BlendMode::Opaque;
+    };
+
+    // ========================================
+    // Buffer Interface
+    // ========================================
+
+    enum class BufferUsage {
+        Static,    // Written once, read many times
+        Dynamic,   // Updated frequently
+        Stream     // Updated every frame
+    };
+
+    enum class BufferType {
+        Vertex,
+        Index,
+        Uniform
+    };
+
+    class Buffer {
+    public:
+        virtual ~Buffer() = default;
+
+        virtual void* map() = 0;
+        virtual void unmap() = 0;
+        virtual void update(const void* data, size_t size, size_t offset = 0) = 0;
+
+        virtual size_t getSize() const = 0;
+        virtual BufferType getType() const = 0;
+        virtual BufferUsage getUsage() const = 0;
+    };
+
+    // ========================================
+    // Texture Interface
+    // ========================================
+
+    enum class TextureFormat {
+        RGBA8,
+        BGRA8,
+        RGB8,
+        R8,
+        RGBA16F,
+        RGBA32F,
+        Depth32Float,
+        Depth24Stencil8
+    };
+
+    enum class TextureUsage {
+        ShaderRead,
+        RenderTarget,
+        DepthStencil
+    };
+
+    enum class TextureFilter {
+        Nearest,
+        Linear
+    };
+
+    enum class TextureWrap {
+        Repeat,
+        ClampToEdge,
+        MirrorRepeat
+    };
+
+    struct SamplerState {
+        TextureFilter minFilter = TextureFilter::Linear;
+        TextureFilter magFilter = TextureFilter::Linear;
+        TextureWrap wrapU = TextureWrap::Repeat;
+        TextureWrap wrapV = TextureWrap::Repeat;
+        TextureWrap wrapW = TextureWrap::Repeat;
+    };
+
+    class Texture {
+    public:
+        virtual ~Texture() = default;
+
+        virtual uint32_t getWidth() const = 0;
+        virtual uint32_t getHeight() const = 0;
+        virtual uint32_t getDepth() const = 0;
+        virtual TextureFormat getFormat() const = 0;
+        virtual TextureUsage getUsage() const = 0;
+
+        virtual void update(const void* data, size_t size) = 0;
+    };
+
+    // ========================================
+    // Shader Interface
+    // ========================================
+
+    enum class ShaderStage {
+        Vertex,
+        Fragment,
+        Compute,
+        Geometry
+    };
+
+    class Shader {
+    public:
+        virtual ~Shader() = default;
+
+        virtual ShaderStage getStage() const = 0;
+        virtual const std::string& getName() const = 0;
+        virtual bool isValid() const = 0;
+    };
+
+    // ========================================
+    // Pipeline Interface
+    // ========================================
+
+    struct PipelineDescriptor {
+        ShaderPtr vertexShader;
+        ShaderPtr fragmentShader;
+        VertexLayout vertexLayout;
+        RenderState renderState;
+        std::vector<TextureFormat> colorFormats;
+        TextureFormat depthFormat = TextureFormat::Depth32Float;
+        std::string name = "Pipeline";
+    };
+
+    class Pipeline {
+    public:
+        virtual ~Pipeline() = default;
+
+        virtual const PipelineDescriptor& getDescriptor() const = 0;
+        virtual bool isValid() const = 0;
+    };
+
+    // ========================================
+    // Command Buffer Interface
+    // ========================================
+
+    enum class PrimitiveType {
+        Points,
+        Lines,
+        LineStrip,
+        Triangles,
+        TriangleStrip
+    };
+
+    class CommandBuffer {
+    public:
+        virtual ~CommandBuffer() = default;
+
+        // Render state
+        virtual void setViewport(int x, int y, int width, int height) = 0;
+        virtual void setScissor(int x, int y, int width, int height) = 0;
+        virtual void setPipeline(PipelinePtr pipeline) = 0;
+
+        // Resource binding
+        virtual void setVertexBuffer(BufferPtr buffer, uint32_t slot = 0) = 0;
+        virtual void setIndexBuffer(BufferPtr buffer) = 0;
+        virtual void setUniformBuffer(BufferPtr buffer, uint32_t slot) = 0;
+        virtual void setTexture(TexturePtr texture, uint32_t slot) = 0;
+        virtual void setSamplerState(const SamplerState& sampler, uint32_t slot) = 0;
+
+        // Drawing commands
+        virtual void draw(PrimitiveType primitive, uint32_t vertexCount, uint32_t firstVertex = 0) = 0;
+        virtual void drawIndexed(PrimitiveType primitive, uint32_t indexCount, uint32_t firstIndex = 0, int32_t vertexOffset = 0) = 0;
+        virtual void drawInstanced(PrimitiveType primitive, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex = 0, uint32_t firstInstance = 0) = 0;
+
+        // Uniform updates (for simple uniforms)
+        virtual void setUniform(const std::string& name, float value) = 0;
+        virtual void setUniform(const std::string& name, const Math::Vec2& value) = 0;
+        virtual void setUniform(const std::string& name, const Math::Vec3& value) = 0;
+        virtual void setUniform(const std::string& name, const Math::Vec4& value) = 0;
+        virtual void setUniform(const std::string& name, const Math::Mat4& value) = 0;
+    };
+
+    // ========================================
+    // Render Pass Interface
+    // ========================================
+
+    struct ClearValue {
+        Math::Vec4 color = {0.0f, 0.0f, 0.0f, 1.0f};
+        float depth = 1.0f;
+        uint32_t stencil = 0;
+    };
+
+    enum class LoadAction {
+        DontCare,
+        Load,
+        Clear
+    };
+
+    enum class StoreAction {
+        DontCare,
+        Store
+    };
+
+    struct RenderPassDescriptor {
+        TexturePtr colorTarget;
+        TexturePtr depthTarget;
+        LoadAction colorLoadAction = LoadAction::Clear;
+        StoreAction colorStoreAction = StoreAction::Store;
+        LoadAction depthLoadAction = LoadAction::Clear;
+        StoreAction depthStoreAction = StoreAction::DontCare;
+        ClearValue clearValue;
+    };
+
+    // ========================================
+    // Main RenderDevice Interface
+    // ========================================
+
+    class RenderDevice {
+    public:
+        virtual ~RenderDevice() = default;
+
+        // Device information
+        virtual const std::string& getDeviceName() const = 0;
+        virtual bool isValid() const = 0;
+
+        // Resource creation
+        virtual BufferPtr createBuffer(BufferType type, BufferUsage usage, size_t size, const void* data = nullptr) = 0;
+        virtual TexturePtr createTexture(uint32_t width, uint32_t height, TextureFormat format, TextureUsage usage, const void* data = nullptr) = 0;
+        virtual ShaderPtr createShader(ShaderStage stage, const std::string& source, const std::string& name = "") = 0;
+        virtual PipelinePtr createPipeline(const PipelineDescriptor& descriptor) = 0;
+
+        // Frame management
+        virtual void beginFrame() = 0;
+        virtual void endFrame() = 0;
+        virtual void present() = 0;
+
+        // Render pass management
+        virtual CommandBufferPtr beginRenderPass(const RenderPassDescriptor& descriptor) = 0;
+        virtual void endRenderPass(CommandBufferPtr commandBuffer) = 0;
+
+        // Default framebuffer access
+        virtual TexturePtr getBackBuffer() = 0;
+        virtual TexturePtr getDepthBuffer() = 0;
+        virtual void resizeBackBuffer(uint32_t width, uint32_t height) = 0;
+
+        // Device capabilities
+        virtual uint32_t getMaxTextureSize() const = 0;
+        virtual uint32_t getMaxVertexAttributes() const = 0;
+        virtual bool supportsComputeShaders() const = 0;
+        virtual bool supportsGeometryShaders() const = 0;
+
+        // Debug and profiling
+        virtual void setDebugName(const std::string& name) = 0;
+        virtual void beginDebugGroup(const std::string& name) = 0;
+        virtual void endDebugGroup() = 0;
+    };
+
+    using RenderDevicePtr = std::shared_ptr<RenderDevice>;
+
+} // namespace Graphics
+} // namespace Engine
+
+
+
+## File: ./Engine/Graphics/RenderSystem.hpp
+// Engine/Graphics/RenderSystem.hpp
+#pragma once
+#include "RenderDevice.hpp"
+#include "GeometryBuilder.hpp"
+#include "../Core/Math.hpp"
+#include <memory>
+#include <vector>
+#include <string>
+
+namespace Engine {
+namespace Graphics {
+
+class RenderSystem {
+public:
+    static RenderSystem& getInstance() {
+        static RenderSystem instance;
+        return instance;
+    }
+
+    void initialize(RenderDevicePtr device);
+    void shutdown();
+
+    RenderDevicePtr getDevice() const { return device_; }
+    bool isInitialized() const { return device_ != nullptr; }
+
+    struct DrawCall {
+        PipelinePtr pipeline;
+        BufferPtr vertexBuffer;
+        BufferPtr indexBuffer;
+        std::vector<BufferPtr> uniformBuffers;
+        std::vector<TexturePtr> textures;
+        uint32_t indexCount = 0;
+        uint32_t firstIndex = 0;
+        Math::Mat4 modelMatrix = Math::Matrix::identity();
+    };
+
+    void submitDrawCall(CommandBufferPtr cmd, const DrawCall& dc);
+
+    void renderMesh(CommandBufferPtr cmd, MeshPtr mesh, const Math::Mat4& model) {
+        if (!cmd || !mesh) return;
+        cmd->setUniform("u_Model", model);
+        mesh->draw(cmd);
+    }
+
+    // Declarations for helpers implemented in .cpp:
+    PipelinePtr createBasicPipeline(const std::string& vs, const std::string& fs);
+    PipelinePtr createColoredPipeline();
+    PipelinePtr createTexturedPipeline();
+
+private:
+    RenderDevicePtr device_;
+};
+
+} // namespace Graphics
+} // namespace Engine
+
+
+
+## File: ./Engine/Camera.hpp
+// Engine/Camera.hpp
+// Enhanced Camera system with better architecture and features
+#pragma once
+
+
+#include "Transform.hpp"
+#include <cfloat>
+#include <cmath>
+
+namespace Engine {
+
+    enum class CameraType {
+        Perspective,
+        Orthographic
+    };
+
+    enum class CameraMovementType {
+        FPS,        // First-person style (move relative to camera orientation)
+        Orbital,    // Orbit around a target point
+        Free        // Free movement in world space
+    };
+
+    class Camera {
+    public:
+        // ========================================
+        // Constructors
+        // ========================================
+
+        Camera(Math::Vec3 position = Math::Vector::make(0, 0, 5),
+               Math::Vec3 target = Math::Vector::Constants::ZERO,
+               Math::Vec3 up = Math::Vector::Constants::UP)
+            : transform_()
+            , worldUp_(up)
+            , target_(target)
+            , cameraType_(CameraType::Perspective)
+            , movementType_(CameraMovementType::FPS)
+            , fov_(60.0f)
+            , nearPlane_(0.01f)
+            , farPlane_(1000.0f)
+            , orthoSize_(10.0f)
+            , movementSpeed_(5.0f)
+            , mouseSensitivity_(0.002f)
+            , zoomSpeed_(2.0f)
+            , yaw_(-90.0f)
+            , pitch_(0.0f)
+            , orbitDistance_(5.0f)
+            , targetOffset_(Math::Vector::Constants::ZERO)
+        {
+            lookAt(position, target, up);
+        }
+
+        // ========================================
+        // View Matrix Generation
+        // ========================================
+
+        Math::Mat4 getViewMatrix() const {
+            if (movementType_ == CameraMovementType::Orbital) {
+                return Math::Matrix::lookAt(getOrbitPosition(), target_ + targetOffset_, worldUp_);
+            } else {
+                Math::Vec3 pos = transform_.getPosition();
+                Math::Vec3 forward = transform_.getForward();
+                return Math::Matrix::lookAt(pos, pos + forward, worldUp_);
+            }
+        }
+
+        // ========================================
+        // Projection Matrix Generation
+        // ========================================
+
+        Math::Mat4 getProjectionMatrix(float aspect,
+                                     float customFov = -1.0f,
+                                     float customNear = -1.0f,
+                                     float customFar = -1.0f) const {
+            float fov = customFov > 0 ? customFov : fov_;
+            float near = customNear > 0 ? customNear : nearPlane_;
+            float far = customFar > 0 ? customFar : farPlane_;
+
+            if (cameraType_ == CameraType::Perspective) {
+                return Math::Matrix::perspectiveDegrees(fov, aspect, near, far);
+            } else {
+                float height = orthoSize_;
+                float width = height * aspect;
+                return Math::Matrix::orthographic(-width/2, width/2, -height/2, height/2, near, far);
+            }
+        }
+
+        Math::Mat4 getViewProjectionMatrix(float aspect,
+                                         float customFov = -1.0f,
+                                         float customNear = -1.0f,
+                                         float customFar = -1.0f) const {
+            return Math::Matrix::multiply(
+                getProjectionMatrix(aspect, customFov, customNear, customFar),
+                getViewMatrix()
+            );
+        }
+
+        // ========================================
+        // Movement System
+        // ========================================
+
+        void processMovement(float deltaTime,
+                           bool moveForward, bool moveBackward,
+                           bool moveLeft, bool moveRight,
+                           bool moveUp = false, bool moveDown = false) {
+
+            float velocity = movementSpeed_ * deltaTime;
+
+            switch (movementType_) {
+                case CameraMovementType::FPS:
+                    processFPSMovement(velocity, moveForward, moveBackward, moveLeft, moveRight, moveUp, moveDown);
+                    break;
+
+                case CameraMovementType::Orbital:
+                    processOrbitalMovement(velocity, moveForward, moveBackward, moveLeft, moveRight, moveUp, moveDown);
+                    break;
+
+                case CameraMovementType::Free:
+                    processFreeMovement(velocity, moveForward, moveBackward, moveLeft, moveRight, moveUp, moveDown);
+                    break;
+            }
+        }
+
+        void processMouseMovement(float deltaX, float deltaY, float customSensitivity = -1.0f) {
+            float sensitivity = customSensitivity > 0 ? customSensitivity : mouseSensitivity_;
+
+            switch (movementType_) {
+                case CameraMovementType::FPS:
+                case CameraMovementType::Free:
+                    processFPSMouseMovement(deltaX, deltaY, sensitivity);
+                    break;
+
+                case CameraMovementType::Orbital:
+                    processOrbitalMouseMovement(deltaX, deltaY, sensitivity);
+                    break;
+            }
+        }
+
+        void processZoom(float delta) {
+            if (cameraType_ == CameraType::Perspective) {
+                if (movementType_ == CameraMovementType::Orbital) {
+                    orbitDistance_ = Math::clamp(orbitDistance_ - delta * zoomSpeed_, 0.5f, 100.0f);
+                    updateOrbitPosition();
+                } else {
+                    fov_ = Math::clamp(fov_ - delta * zoomSpeed_, 1.0f, 120.0f);
+                }
+            } else {
+                orthoSize_ = Math::clamp(orthoSize_ - delta * zoomSpeed_ * 0.1f, 0.1f, 100.0f);
+            }
+        }
+
+        // ========================================
+        // Position and Orientation
+        // ========================================
+
+        void setPosition(const Math::Vec3& position) {
+            if (movementType_ == CameraMovementType::Orbital) {
+                // For orbital camera, set the target and maintain distance
+                setTarget(position);
+            } else {
+                transform_.setPosition(position);
+            }
+        }
+
+        Math::Vec3 getPosition() const {
+            if (movementType_ == CameraMovementType::Orbital) {
+                return getOrbitPosition();
+            } else {
+                return transform_.getPosition();
+            }
+        }
+
+        void setTarget(const Math::Vec3& target) {
+            target_ = target;
+            if (movementType_ == CameraMovementType::Orbital) {
+                updateOrbitPosition();
+            } else {
+                lookAt(transform_.getPosition(), target, worldUp_);
+            }
+        }
+
+        Math::Vec3 getTarget() const {
+            if (movementType_ == CameraMovementType::Orbital) {
+                return target_ + targetOffset_;
+            } else {
+                return transform_.getPosition() + transform_.getForward();
+            }
+        }
+
+        void lookAt(const Math::Vec3& position, const Math::Vec3& target, const Math::Vec3& up) {
+            transform_.setPosition(position);
+            transform_.lookAt(target, up);
+            worldUp_ = Math::Vector::normalize(up);
+            target_ = target;
+
+            // Update yaw and pitch from transform
+            Math::Vec3 forward = transform_.getForward();
+            yaw_ = Math::radiansToDegrees(atan2f(forward.z, forward.x));
+            pitch_ = Math::radiansToDegrees(asinf(-forward.y));
+
+            if (movementType_ == CameraMovementType::Orbital) {
+                orbitDistance_ = Math::Vector::distance(position, target);
+                updateOrbitPosition();
+            }
+        }
+
+        // ========================================
+        // Direction Vectors
+        // ========================================
+
+        Math::Vec3 getForward() const {
+            if (movementType_ == CameraMovementType::Orbital) {
+                return Math::Vector::normalize(target_ + targetOffset_ - getOrbitPosition());
+            } else {
+                return transform_.getForward();
+            }
+        }
+
+        Math::Vec3 getRight() const {
+            return transform_.getRight();
+        }
+
+        Math::Vec3 getUp() const {
+            return transform_.getUp();
+        }
+
+        // ========================================
+        // Camera Settings
+        // ========================================
+
+        void setCameraType(CameraType type) { cameraType_ = type; }
+        CameraType getCameraType() const { return cameraType_; }
+
+        void setMovementType(CameraMovementType type) {
+            movementType_ = type;
+            if (type == CameraMovementType::Orbital) {
+                updateOrbitPosition();
+            }
+        }
+        CameraMovementType getMovementType() const { return movementType_; }
+
+        void setFieldOfView(float fov) { fov_ = Math::clamp(fov, 1.0f, 179.0f); }
+        float getFieldOfView() const { return fov_; }
+
+        void setNearPlane(float near) { nearPlane_ = Math::clamp(near, 0.001f, farPlane_ - 0.001f); }
+        float getNearPlane() const { return nearPlane_; }
+
+        void setFarPlane(float far) { farPlane_ = Math::clamp(far, nearPlane_ + 0.001f, 10000.0f); }
+        float getFarPlane() const { return farPlane_; }
+
+        void setOrthographicSize(float size) { orthoSize_ = Math::clamp(size, 0.1f, 1000.0f); }
+        float getOrthographicSize() const { return orthoSize_; }
+
+        void setMovementSpeed(float speed) { movementSpeed_ = Math::clamp(speed, 0.1f, 100.0f); }
+        float getMovementSpeed() const { return movementSpeed_; }
+
+        void setMouseSensitivity(float sensitivity) { mouseSensitivity_ = Math::clamp(sensitivity, 0.0001f, 0.1f); }
+        float getMouseSensitivity() const { return mouseSensitivity_; }
+
+        void setZoomSpeed(float speed) { zoomSpeed_ = Math::clamp(speed, 0.1f, 10.0f); }
+        float getZoomSpeed() const { return zoomSpeed_; }
+
+        // ========================================
+        // Orbital Camera Settings
+        // ========================================
+
+        void setOrbitDistance(float distance) {
+            orbitDistance_ = Math::clamp(distance, 0.1f, 1000.0f);
+            if (movementType_ == CameraMovementType::Orbital) {
+                updateOrbitPosition();
+            }
+        }
+        float getOrbitDistance() const { return orbitDistance_; }
+
+        void setTargetOffset(const Math::Vec3& offset) {
+            targetOffset_ = offset;
+            if (movementType_ == CameraMovementType::Orbital) {
+                updateOrbitPosition();
+            }
+        }
+        const Math::Vec3& getTargetOffset() const { return targetOffset_; }
+
+        // ========================================
+        // Ray Casting
+        // ========================================
+
+        struct Ray {
+            Math::Vec3 origin;
+            Math::Vec3 direction;
+        };
+
+        Ray screenPointToRay(const Math::Vec2& screenPoint, const Math::Vec2& screenSize) const {
+            // Convert screen coordinates to normalized device coordinates
+            float x = (2.0f * screenPoint.x) / screenSize.x - 1.0f;
+            float y = 1.0f - (2.0f * screenPoint.y) / screenSize.y;
+
+            // Create ray in clip space
+            Math::Vec4 rayClip = Math::Vector::make(x, y, -1.0f, 1.0f);
+
+            // Transform to eye space
+            float aspect = screenSize.x / screenSize.y;
+            Math::Mat4 projInverse = Math::Matrix::inverse(getProjectionMatrix(aspect));
+            Math::Vec4 rayEye = Math::Matrix::multiply(projInverse, rayClip);
+            rayEye.z = -1.0f;
+            rayEye.w = 0.0f;
+
+            // Transform to world space
+            Math::Mat4 viewInverse = Math::Matrix::inverse(getViewMatrix());
+            Math::Vec4 rayWorld = Math::Matrix::multiply(viewInverse, rayEye);
+
+            Ray ray;
+            ray.origin = getPosition();
+            ray.direction = Math::Vector::normalize(Math::Vec3{rayWorld.x, rayWorld.y, rayWorld.z});
+
+            return ray;
+        }
+
+        // ========================================
+        // Frustum Information
+        // ========================================
+
+        struct FrustumCorners {
+            Math::Vec3 nearTopLeft, nearTopRight, nearBottomLeft, nearBottomRight;
+            Math::Vec3 farTopLeft, farTopRight, farBottomLeft, farBottomRight;
+        };
+
+        FrustumCorners getFrustumCorners(float aspect) const {
+            FrustumCorners corners;
+
+            Math::Mat4 viewProj = getViewProjectionMatrix(aspect);
+            Math::Mat4 invViewProj = Math::Matrix::inverse(viewProj);
+
+            // NDC coordinates for frustum corners
+            Math::Vec4 ndcCorners[8] = {
+                {-1, -1, -1, 1}, {1, -1, -1, 1}, {1, 1, -1, 1}, {-1, 1, -1, 1},  // Near
+                {-1, -1,  1, 1}, {1, -1,  1, 1}, {1, 1,  1, 1}, {-1, 1,  1, 1}   // Far
+            };
+
+            // Transform to world space
+            Math::Vec3 worldCorners[8];
+            for (int i = 0; i < 8; i++) {
+                Math::Vec4 worldPos = Math::Matrix::multiply(invViewProj, ndcCorners[i]);
+                worldPos /= worldPos.w;  // Perspective divide
+                worldCorners[i] = Math::Vec3{worldPos.x, worldPos.y, worldPos.z};
+            }
+
+            corners.nearBottomLeft = worldCorners[0];
+            corners.nearBottomRight = worldCorners[1];
+            corners.nearTopRight = worldCorners[2];
+            corners.nearTopLeft = worldCorners[3];
+            corners.farBottomLeft = worldCorners[4];
+            corners.farBottomRight = worldCorners[5];
+            corners.farTopRight = worldCorners[6];
+            corners.farTopLeft = worldCorners[7];
+
+            return corners;
+        }
+
+        // ========================================
+        // Animation and Interpolation
+        // ========================================
+
+        void animateToPosition(const Math::Vec3& targetPosition, float duration) {
+            // This would typically be handled by an animation system
+            // For now, just set the position directly
+            setPosition(targetPosition);
+        }
+
+        void animateToTarget(const Math::Vec3& newTarget, float duration) {
+            setTarget(newTarget);
+        }
+
+        // ========================================
+        // Debug and Utilities
+        // ========================================
+
+        void debugPrint() const {
+            printf("Camera Debug Info:\n");
+            printf("  Position: (%.3f, %.3f, %.3f)\n", getPosition().x, getPosition().y, getPosition().z);
+            printf("  Target: (%.3f, %.3f, %.3f)\n", getTarget().x, getTarget().y, getTarget().z);
+            printf("  Forward: (%.3f, %.3f, %.3f)\n", getForward().x, getForward().y, getForward().z);
+            printf("  Type: %s\n", (cameraType_ == CameraType::Perspective) ? "Perspective" : "Orthographic");
+            printf("  Movement: %s\n", getMovementTypeString());
+            printf("  FOV: %.1f°\n", fov_);
+            printf("  Near/Far: %.3f / %.3f\n", nearPlane_, farPlane_);
+            if (movementType_ == CameraMovementType::Orbital) {
+                printf("  Orbit Distance: %.3f\n", orbitDistance_);
+            }
+        }
+
+    private:
+        // ========================================
+        // Internal State
+        // ========================================
+
+        Engine::Transform transform_;
+        Math::Vec3 worldUp_;
+        Math::Vec3 target_;
+        Math::Vec3 targetOffset_;
+
+        CameraType cameraType_;
+        CameraMovementType movementType_;
+
+        // Projection parameters
+        float fov_;
+        float nearPlane_;
+        float farPlane_;
+        float orthoSize_;
+
+        // Movement parameters
+        float movementSpeed_;
+        float mouseSensitivity_;
+        float zoomSpeed_;
+
+        // Orientation (for FPS-style movement)
+        float yaw_;
+        float pitch_;
+
+        // Orbital camera parameters
+        float orbitDistance_;
+
+        // ========================================
+        // Internal Methods
+        // ========================================
+
+        void processFPSMovement(float velocity, bool forward, bool backward,
+                              bool left, bool right, bool up, bool down) {
+            Math::Vec3 movement = Math::Vector::Constants::ZERO;
+
+            if (forward) movement += transform_.getForward() * velocity;
+            if (backward) movement -= transform_.getForward() * velocity;
+            if (left) movement -= transform_.getRight() * velocity;
+            if (right) movement += transform_.getRight() * velocity;
+            if (up) movement += worldUp_ * velocity;
+            if (down) movement -= worldUp_ * velocity;
+
+            transform_.translate(movement);
+        }
+
+        void processOrbitalMovement(float velocity, bool forward, bool backward,
+                                  bool left, bool right, bool up, bool down) {
+            if (forward) orbitDistance_ = Math::clamp(orbitDistance_ - velocity, 0.1f, 1000.0f);
+            if (backward) orbitDistance_ = Math::clamp(orbitDistance_ + velocity, 0.1f, 1000.0f);
+
+            Math::Vec3 movement = Math::Vector::Constants::ZERO;
+            if (left) movement -= transform_.getRight() * velocity;
+            if (right) movement += transform_.getRight() * velocity;
+            if (up) movement += worldUp_ * velocity;
+            if (down) movement -= worldUp_ * velocity;
+
+            target_ += movement;
+            updateOrbitPosition();
+        }
+
+        void processFreeMovement(float velocity, bool forward, bool backward,
+                               bool left, bool right, bool up, bool down) {
+            Math::Vec3 movement = Math::Vector::Constants::ZERO;
+
+            if (forward) movement += Math::Vector::Constants::FORWARD * velocity;
+            if (backward) movement += Math::Vector::Constants::BACK * velocity;
+            if (left) movement += Math::Vector::Constants::LEFT * velocity;
+            if (right) movement += Math::Vector::Constants::RIGHT * velocity;
+            if (up) movement += Math::Vector::Constants::UP * velocity;
+            if (down) movement += Math::Vector::Constants::DOWN * velocity;
+
+            transform_.translate(movement);
+        }
+
+        void processFPSMouseMovement(float deltaX, float deltaY, float sensitivity) {
+            yaw_ += deltaX * sensitivity * Math::Constants::RAD_TO_DEG;
+            pitch_ -= deltaY * sensitivity * Math::Constants::RAD_TO_DEG;
+
+            pitch_ = Math::clamp(pitch_, -89.0f, 89.0f);
+
+            updateCameraVectors();
+        }
+
+        void processOrbitalMouseMovement(float deltaX, float deltaY, float sensitivity) {
+            yaw_ += deltaX * sensitivity * Math::Constants::RAD_TO_DEG;
+            pitch_ -= deltaY * sensitivity * Math::Constants::RAD_TO_DEG;
+
+            pitch_ = Math::clamp(pitch_, -89.0f, 89.0f);
+
+            updateOrbitPosition();
+        }
+
+        void updateCameraVectors() {
+            // Calculate forward direction from yaw and pitch
+            Math::Vec3 front;
+            front.x = cosf(Math::degreesToRadians(yaw_)) * cosf(Math::degreesToRadians(pitch_));
+            front.y = sinf(Math::degreesToRadians(pitch_));
+            front.z = sinf(Math::degreesToRadians(yaw_)) * cosf(Math::degreesToRadians(pitch_));
+
+            // Update transform orientation
+            transform_.lookInDirection(Math::Vector::normalize(front), worldUp_);
+        }
+
+        void updateOrbitPosition() {
+            // Calculate position based on spherical coordinates
+            float yawRad = Math::degreesToRadians(yaw_);
+            float pitchRad = Math::degreesToRadians(pitch_);
+
+            Math::Vec3 offset;
+            offset.x = orbitDistance_ * cosf(pitchRad) * cosf(yawRad);
+            offset.y = orbitDistance_ * sinf(pitchRad);
+            offset.z = orbitDistance_ * cosf(pitchRad) * sinf(yawRad);
+
+            Math::Vec3 newPosition = target_ + targetOffset_ + offset;
+            transform_.setPosition(newPosition);
+            transform_.lookAt(target_ + targetOffset_, worldUp_);
+        }
+
+        Math::Vec3 getOrbitPosition() const {
+            float yawRad = Math::degreesToRadians(yaw_);
+            float pitchRad = Math::degreesToRadians(pitch_);
+
+            Math::Vec3 offset;
+            offset.x = orbitDistance_ * cosf(pitchRad) * cosf(yawRad);
+            offset.y = orbitDistance_ * sinf(pitchRad);
+            offset.z = orbitDistance_ * cosf(pitchRad) * sinf(yawRad);
+
+            return target_ + targetOffset_ + offset;
+        }
+
+        const char* getMovementTypeString() const {
+            switch (movementType_) {
+                case CameraMovementType::FPS: return "FPS";
+                case CameraMovementType::Orbital: return "Orbital";
+                case CameraMovementType::Free: return "Free";
+                default: return "Unknown";
+            }
+        }
+    };
+
+    // ========================================
+    // Camera Utilities
+    // ========================================
+
+    namespace CameraUtils {
+
+        // Create a camera looking at a target from a distance
+        inline Camera createLookAt(const Math::Vec3& position, const Math::Vec3& target,
+                                 const Math::Vec3& up = Math::Vector::Constants::UP) {
+            Camera camera(position, target, up);
+            return camera;
+        }
+
+        // Create an orbital camera around a target
+        inline Camera createOrbital(const Math::Vec3& target, float distance,
+                                   float yaw = -90.0f, float pitch = 0.0f) {
+            Camera camera;
+            camera.setMovementType(CameraMovementType::Orbital);
+            camera.setTarget(target);
+            camera.setOrbitDistance(distance);
+
+            // Set initial angles
+            Math::Vec3 position;
+            position.x = target.x + distance * cosf(Math::degreesToRadians(pitch)) * cosf(Math::degreesToRadians(yaw));
+            position.y = target.y + distance * sinf(Math::degreesToRadians(pitch));
+            position.z = target.z + distance * cosf(Math::degreesToRadians(pitch)) * sinf(Math::degreesToRadians(yaw));
+
+            camera.lookAt(position, target, Math::Vector::Constants::UP);
+            return camera;
+        }
+
+        // Create a perspective camera
+        inline Camera createPerspective(float fov = 60.0f, float near = 0.01f, float far = 1000.0f) {
+            Camera camera;
+            camera.setCameraType(CameraType::Perspective);
+            camera.setFieldOfView(fov);
+            camera.setNearPlane(near);
+            camera.setFarPlane(far);
+            return camera;
+        }
+
+        // Create an orthographic camera
+        inline Camera createOrthographic(float size = 10.0f, float near = 0.01f, float far = 1000.0f) {
+            Camera camera;
+            camera.setCameraType(CameraType::Orthographic);
+            camera.setOrthographicSize(size);
+            camera.setNearPlane(near);
+            camera.setFarPlane(far);
+            return camera;
+        }
+
+        // Smooth camera transitions
+        inline Camera interpolate(const Camera& from, const Camera& to, float t) {
+            Camera result = from;
+
+            // Interpolate position
+            Math::Vec3 fromPos = from.getPosition();
+            Math::Vec3 toPos = to.getPosition();
+            result.setPosition(Math::Vector::lerp(fromPos, toPos, t));
+
+            // Interpolate target (for orbital cameras)
+            if (from.getMovementType() == CameraMovementType::Orbital ||
+                to.getMovementType() == CameraMovementType::Orbital) {
+                Math::Vec3 fromTarget = from.getTarget();
+                Math::Vec3 toTarget = to.getTarget();
+                result.setTarget(Math::Vector::lerp(fromTarget, toTarget, t));
+            }
+
+            // Interpolate FOV
+            float fromFov = from.getFieldOfView();
+            float toFov = to.getFieldOfView();
+            result.setFieldOfView(Math::lerp(fromFov, toFov, t));
+
+            return result;
+        }
+
+        // Calculate screen space bounds of a 3D bounding box
+        struct ScreenBounds {
+            Math::Vec2 min, max;
+            bool visible;
+        };
+
+        inline ScreenBounds getScreenBounds(const Camera& camera,
+                                          const Math::Vec3& boundsMin,
+                                          const Math::Vec3& boundsMax,
+                                          const Math::Vec2& screenSize) {
+            ScreenBounds result = {{FLT_MAX, FLT_MAX}, {-FLT_MAX, -FLT_MAX}, false};
+
+            float aspect = screenSize.x / screenSize.y;
+            Math::Mat4 viewProj = camera.getViewProjectionMatrix(aspect);
+
+            // Test all 8 corners of the bounding box
+            Math::Vec3 corners[8] = {
+                {boundsMin.x, boundsMin.y, boundsMin.z},
+                {boundsMax.x, boundsMin.y, boundsMin.z},
+                {boundsMin.x, boundsMax.y, boundsMin.z},
+                {boundsMax.x, boundsMax.y, boundsMin.z},
+                {boundsMin.x, boundsMin.y, boundsMax.z},
+                {boundsMax.x, boundsMin.y, boundsMax.z},
+                {boundsMin.x, boundsMax.y, boundsMax.z},
+                {boundsMax.x, boundsMax.y, boundsMax.z}
+            };
+
+            bool anyVisible = false;
+
+            for (int i = 0; i < 8; i++) {
+                Math::Vec4 clipPos = Math::Matrix::multiply(viewProj, Math::Vector::make(corners[i], 1.0f));
+
+                if (clipPos.w > 0) {  // In front of camera
+                    anyVisible = true;
+
+                    // Convert to NDC
+                    Math::Vec3 ndc = Math::Vec3{clipPos.x / clipPos.w, clipPos.y / clipPos.w, clipPos.z / clipPos.w};
+
+                    // Convert to screen space
+                    Math::Vec2 screen;
+                    screen.x = (ndc.x + 1.0f) * 0.5f * screenSize.x;
+                    screen.y = (1.0f - ndc.y) * 0.5f * screenSize.y;
+
+                    result.min.x = fminf(result.min.x, screen.x);
+                    result.min.y = fminf(result.min.y, screen.y);
+                    result.max.x = fmaxf(result.max.x, screen.x);
+                    result.max.y = fmaxf(result.max.y, screen.y);
+                }
+            }
+
+            result.visible = anyVisible;
+            return result;
+        }
+    }
+
+} // namespace Engine
+
+// ========================================
+// Backward Compatibility
+// ========================================
+
+// For existing code that expects the old Camera interface
+using Camera = Engine::Camera;
+
+
+
+## File: ./Engine/Graphics/VertexLayout.cpp
+// Engine/Graphics/VertexLayout.cpp
+#include "RenderDevice.hpp"
+
+namespace Engine { namespace Graphics {
+
+static constexpr uint32_t A16(uint32_t v) { return (v + 15u) & ~15u; } // align to 16
+
+VertexLayout VertexLayout::Position3D() {
+    VertexLayout layout;
+    layout.attributes = {
+        {"position", VertexFormat::Float3, 0, 0}
+    };
+    layout.stride = A16(sizeof(Math::Vec3));          // 16
+    return layout;
+}
+
+VertexLayout VertexLayout::PositionColor() {
+    constexpr uint32_t offPos = 0;                    // 0
+    constexpr uint32_t offCol = A16(sizeof(Math::Vec3)); // 16
+    VertexLayout layout;
+    layout.attributes = {
+        {"position", VertexFormat::Float3, offPos, 0},
+        {"color",    VertexFormat::Float3, offCol, 0}
+    };
+    layout.stride = A16(offCol + sizeof(Math::Vec3)); // 32
+    return layout;
+}
+
+VertexLayout VertexLayout::PositionNormalTexCoord() {
+    constexpr uint32_t offPos = 0;                    // 0
+    constexpr uint32_t offNrm = A16(sizeof(Math::Vec3)); // 16
+    constexpr uint32_t offUV  = offNrm + sizeof(Math::Vec3); // 32
+    VertexLayout layout;
+    layout.attributes = {
+        {"position", VertexFormat::Float3, offPos, 0},
+        {"normal",   VertexFormat::Float3, offNrm, 0},
+        {"texCoord", VertexFormat::Float2, offUV,  0}
+    };
+    layout.stride = A16(offUV + sizeof(Math::Vec2));  // 64
+    return layout;
+}
+
+VertexLayout VertexLayout::PositionColorNormalTexCoord() {
+    constexpr uint32_t offPos = 0;                    // 0
+    constexpr uint32_t offCol = A16(sizeof(Math::Vec3)); // 16
+    constexpr uint32_t offNrm = offCol + sizeof(Math::Vec3); // 32
+    constexpr uint32_t offUV  = offNrm + sizeof(Math::Vec3); // 48
+    VertexLayout layout;
+    layout.attributes = {
+        {"position", VertexFormat::Float3, offPos, 0},
+        {"color",    VertexFormat::Float3, offCol, 0},
+        {"normal",   VertexFormat::Float3, offNrm, 0},
+        {"texCoord", VertexFormat::Float2, offUV,  0}
+    };
+    layout.stride = A16(offUV + sizeof(Math::Vec2));  // 64
+    return layout;
+}
+
+}} // namespace
+
+
+
+## File: ./Engine/Graphics/RenderSystem.cpp
+// Engine/Graphics/RenderSystem.cpp
+#include "RenderSystem.hpp"
+#include <stdexcept>
+#include <cstdio>
+
+namespace Engine {
+namespace Graphics {
+
+void RenderSystem::initialize(RenderDevicePtr device) {
+    if (device_) { printf("⚠️ RenderSystem already initialized\n"); return; }
+    if (!device || !device->isValid()) throw std::runtime_error("Cannot initialize RenderSystem with invalid device");
+    device_ = std::move(device);
+    printf("✅ RenderSystem initialized with device: %s\n", device_->getDeviceName().c_str());
+}
+
+void RenderSystem::shutdown() {
+    if (!device_) return;
+    printf("🛑 Shutting down RenderSystem...\n");
+    device_.reset();
+    printf("✅ RenderSystem shutdown complete\n");
+}
+
+void RenderSystem::submitDrawCall(CommandBufferPtr cmd, const DrawCall& dc) {
+    if (!cmd || !dc.pipeline || !dc.vertexBuffer || dc.indexCount == 0) {
+        printf("❌ Invalid draw call parameters\n"); return;
+    }
+    cmd->setPipeline(dc.pipeline);
+    cmd->setVertexBuffer(dc.vertexBuffer, 0);
+    if (dc.indexBuffer) cmd->setIndexBuffer(dc.indexBuffer);
+    for (size_t i = 0; i < dc.uniformBuffers.size(); ++i)
+        if (dc.uniformBuffers[i]) cmd->setUniformBuffer(dc.uniformBuffers[i], static_cast<uint32_t>(i));
+    for (size_t i = 0; i < dc.textures.size(); ++i)
+        if (dc.textures[i]) cmd->setTexture(dc.textures[i], static_cast<uint32_t>(i));
+    cmd->setUniform("u_Model", dc.modelMatrix);
+    cmd->drawIndexed(PrimitiveType::Triangles, dc.indexCount, dc.firstIndex, 0);
+}
+
+PipelinePtr RenderSystem::createBasicPipeline(const std::string& vs, const std::string& fs) {
+    if (!device_) throw std::runtime_error("RenderSystem not initialized");
+    auto v = device_->createShader(ShaderStage::Vertex,   vs, "vs_main");
+    auto f = device_->createShader(ShaderStage::Fragment, fs, "fs_main");
+    PipelineDescriptor d;
+    d.vertexShader = v;
+    d.fragmentShader = f;
+    d.vertexLayout = VertexLayout::Position3D();
+    d.colorFormats = {TextureFormat::BGRA8};
+    d.depthFormat = TextureFormat::Depth32Float;
+    d.name = "BasicPipeline";
+    return device_->createPipeline(d);
+}
+
+PipelinePtr RenderSystem::createColoredPipeline() {
+    if (!device_) throw std::runtime_error("RenderSystem not initialized");
+
+    // CHANGE: Load from default Metal library instead of embedded strings
+    auto vs = device_->createShader(ShaderStage::Vertex, "", "vs_main");
+    auto fs = device_->createShader(ShaderStage::Fragment, "", "fs_main"); // Basic unlit version
+
+    PipelineDescriptor d;
+    d.vertexShader = vs;
+    d.fragmentShader = fs;
+    d.vertexLayout = VertexLayout::PositionColor();
+    d.colorFormats = {TextureFormat::BGRA8};
+    d.depthFormat = TextureFormat::Depth32Float;
+    d.name = "ColoredPipeline";
+    return device_->createPipeline(d);
+}
+
+PipelinePtr RenderSystem::createTexturedPipeline() {
+    if (!device_) throw std::runtime_error("RenderSystem not initialized");
+
+    // CHANGE: Load from default Metal library
+    auto vs = device_->createShader(ShaderStage::Vertex, "", "vs_main");
+    auto fs = device_->createShader(ShaderStage::Fragment, "", "fs_textured"); // Add this to Shaders.metal
+
+    PipelineDescriptor d;
+    d.vertexShader = vs;
+    d.fragmentShader = fs;
+    d.vertexLayout = VertexLayout::PositionNormalTexCoord();
+    d.colorFormats = {TextureFormat::BGRA8};
+    d.depthFormat = TextureFormat::Depth32Float;
+    d.name = "TexturedPipeline";
+    return device_->createPipeline(d);
+}
+
+} // namespace Graphics
+} // namespace Engine
+
+
+
+## File: ./AppDelegate.h
+// AppDelegate.h
+#import <AppKit/AppKit.h>
+@interface AppDelegate : NSObject <NSApplicationDelegate>
+@end
+
+
+
+## File: ./MyMetalView.h
+// MyMetalView.h
+
+#import <AppKit/AppKit.h>
+@interface MyMetalView : NSView
+@end
+
+
+
+## File: ./Assets.xcassets/AppIcon.appiconset/Contents.json
+{
+  "images" : [
+    {
+      "idiom" : "mac",
+      "scale" : "1x",
+      "size" : "16x16"
+    },
+    {
+      "idiom" : "mac",
+      "scale" : "2x",
+      "size" : "16x16"
+    },
+    {
+      "idiom" : "mac",
+      "scale" : "1x",
+      "size" : "32x32"
+    },
+    {
+      "idiom" : "mac",
+      "scale" : "2x",
+      "size" : "32x32"
+    },
+    {
+      "idiom" : "mac",
+      "scale" : "1x",
+      "size" : "128x128"
+    },
+    {
+      "idiom" : "mac",
+      "scale" : "2x",
+      "size" : "128x128"
+    },
+    {
+      "idiom" : "mac",
+      "scale" : "1x",
+      "size" : "256x256"
+    },
+    {
+      "idiom" : "mac",
+      "scale" : "2x",
+      "size" : "256x256"
+    },
+    {
+      "idiom" : "mac",
+      "scale" : "1x",
+      "size" : "512x512"
+    },
+    {
+      "idiom" : "mac",
+      "scale" : "2x",
+      "size" : "512x512"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
+
+
+
+## File: ./Assets.xcassets/AccentColor.colorset/Contents.json
+{
+  "colors" : [
+    {
+      "idiom" : "universal"
+    }
+  ],
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
+
+
+
+## File: ./Assets.xcassets/Contents.json
+{
+  "info" : {
+    "author" : "xcode",
+    "version" : 1
+  }
+}
+
+

@@ -36,22 +36,17 @@ struct Uniforms {
 
 // Vertex shader
 vertex VertexOut vs_main(VertexIn in [[stage_in]],
-                         constant Uniforms& uniforms [[buffer(1)]],
-                         uint vertexID [[vertex_id]]) {
+                         constant Uniforms& uniforms [[buffer(1)]]) {
     VertexOut out;
     
-    // Transform position to world space
+    // Use the pre-calculated MVP matrix directly
+    out.position = uniforms.modelViewProjection * float4(in.position, 1.0);
+
+    // For world position (used in lighting)
     float4 worldPos = uniforms.model * float4(in.position, 1.0);
     out.worldPosition = worldPos.xyz;
 
-    // Transform to view space
-    float4 viewPos = uniforms.view * worldPos;
-    out.viewPosition = viewPos.xyz;
-
-    // Transform to clip space
-    out.position = uniforms.projection * viewPos;
-
-    // Transform normal to world space (assumes uniform scaling)
+    // Transform normal to world space
     float3 worldNormal = (uniforms.model * float4(in.normal, 0.0)).xyz;
     out.normal = normalize(worldNormal);
     
@@ -59,6 +54,10 @@ vertex VertexOut vs_main(VertexIn in [[stage_in]],
     out.color = in.color;
     out.texCoord = in.texCoord;
     
+    // For view position (if needed for effects)
+    float4 viewPos = uniforms.view * worldPos;
+    out.viewPosition = viewPos.xyz;
+
     return out;
 }
 

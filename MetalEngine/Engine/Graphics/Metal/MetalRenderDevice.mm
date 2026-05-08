@@ -121,36 +121,34 @@ namespace Metal {
     // MetalShader Implementation
     // ========================================
 
-     MetalShader::MetalShader(id<MTLDevice> device, ShaderStage stage, const std::string& source, const std::string& name)
+    MetalShader::MetalShader(id<MTLDevice> device, ShaderStage stage,
+                             const std::string& source, const std::string& name)
         : stage_(stage), name_(name) {
 
-        id<MTLLibrary> library;
+        id<MTLLibrary> library = nil;
         NSError* error = nil;
 
         if (source.empty()) {
-            // NEW: Load from default library (compiled .metal files)
             library = [device newDefaultLibrary];
             if (!library) {
-                throw std::runtime_error("Failed to load default Metal library. Ensure Shaders.metal is compiled in Xcode.");
+                throw std::runtime_error(
+                    "Failed to load default.metallib. "
+                    "Ensure Shaders.metal is compiled and copied into the bundle's Resources folder.");
             }
-            printf("📚 Loading shader '%s' from default Metal library\n", name.c_str());
         } else {
-            // EXISTING: Load from source string (keep this for compatibility)
             library = [device newLibraryWithSource:[NSString stringWithUTF8String:source.c_str()]
-                                          options:nil
-                                            error:&error];
+                                           options:nil
+                                             error:&error];
             if (!library || error) {
                 throw std::runtime_error("Failed to compile shader: " + name);
             }
-            printf("📚 Compiled shader '%s' from source string\n", name.c_str());
         }
 
-        NSString* functionName = name.empty() ?
-            (stage == ShaderStage::Vertex ? @"vs_main" : @"fs_main") :
-            [NSString stringWithUTF8String:name.c_str()];
+        NSString* functionName = name.empty()
+            ? (stage == ShaderStage::Vertex ? @"vs_main" : @"fs_main")
+            : [NSString stringWithUTF8String:name.c_str()];
 
         function_ = [library newFunctionWithName:functionName];
-
         if (!function_) {
             throw std::runtime_error("Failed to find shader function '" + name + "' in Metal library");
         }
@@ -295,10 +293,14 @@ namespace Metal {
         indexBuffer_ = metalBuffer->getMetalBuffer();
     }
 
-void MetalCommandBuffer::setUniformBuffer(BufferPtr buffer, uint32_t slot) {
-    auto metalBuffer = std::static_pointer_cast<MetalBuffer>(buffer);
-    [encoder_ setVertexBuffer:metalBuffer->getMetalBuffer() offset:0 atIndex:slot];
-}
+    void MetalCommandBuffer::setUniformBuffer(BufferPtr buffer, uint32_t slot) {
+        auto metalBuffer = std::static_pointer_cast<MetalBuffer>(buffer);
+        // Bind to both the vertex and fragment stages so either stage can
+        // read the same uniforms at the same buffer slot.
+        [encoder_ setVertexBuffer:metalBuffer->getMetalBuffer()   offset:0 atIndex:slot];
+        [encoder_ setFragmentBuffer:metalBuffer->getMetalBuffer() offset:0 atIndex:slot];
+    }
+
     void MetalCommandBuffer::setTexture(TexturePtr texture, uint32_t slot) {
         auto metalTexture = std::static_pointer_cast<MetalTexture>(texture);
         [encoder_ setFragmentTexture:metalTexture->getMetalTexture() atIndex:slot];
@@ -373,30 +375,33 @@ void MetalCommandBuffer::setUniformBuffer(BufferPtr buffer, uint32_t slot) {
     // ========================================
 
     MetalRenderDevice::MetalRenderDevice(id<MTLDevice> device, CAMetalLayer* layer)
-        : device_(device), layer_(layer), currentCommandBuffer_(nil), currentDrawable_(nil), frameWidth_(0), frameHeight_(0) {
+        : device_(device),
+          layer_(layer),
+          currentCommandBuffer_(nil),
+          currentDrawable_(nil),
+          frameWidth_(0),
+          frameHeight_(0) {
 
         deviceName_ = std::string([[device name] UTF8String]);
         commandQueue_ = [device newCommandQueue];
-
         if (!commandQueue_) {
             throw std::runtime_error("Failed to create Metal command queue");
         }
 
-        // Configure layer
-        layer_.device = device_;
-        layer_.pixelFormat = MTLPixelFormatBGRA8Unorm;
+        layer_.device          = device_;
+        layer_.pixelFormat     = MTLPixelFormatBGRA8Unorm;
         layer_.framebufferOnly = YES;
 
-    	CGSize ds = layer_.drawableSize;
-    	if (ds.width < 1 || ds.height < 1) {
-        CGFloat scale = layer_.contentsScale > 0 ? layer_.contentsScale : 1.0;
-        CGSize pts = layer_.bounds.size;
-        layer_.drawableSize = CGSizeMake(std::max<CGFloat>(1, pts.width * scale),
-                                         std::max<CGFloat>(1, pts.height * scale));
-        ds = layer_.drawableSize;
-   			 }
-   			 frameWidth_  = static_cast<uint32_t>(ds.width);
-   		 frameHeight_ = static_cast<uint32_t>(ds.height);
+        CGSize ds = layer_.drawableSize;
+        if (ds.width < 1 || ds.height < 1) {
+            CGFloat scale = layer_.contentsScale > 0 ? layer_.contentsScale : 1.0;
+            CGSize pts = layer_.bounds.size;
+            layer_.drawableSize = CGSizeMake(std::max<CGFloat>(1, pts.width  * scale),
+                                             std::max<CGFloat>(1, pts.height * scale));
+            ds = layer_.drawableSize;
+        }
+        frameWidth_  = static_cast<uint32_t>(ds.width);
+        frameHeight_ = static_cast<uint32_t>(ds.height);
 
         createDepthBuffer();
     }
@@ -426,14 +431,16 @@ void MetalCommandBuffer::setUniformBuffer(BufferPtr buffer, uint32_t slot) {
         }
     }
 
-void MetalRenderDevice::endFrame() {
-    if (currentCommandBuffer_) {
-        if (currentDrawable_) [currentCommandBuffer_ presentDrawable:currentDrawable_];
-        [currentCommandBuffer_ commit];
-        currentCommandBuffer_ = nil;
-        currentDrawable_ = nil;
+    void MetalRenderDevice::endFrame() {
+        if (currentCommandBuffer_) {
+            if (currentDrawable_) {
+                [currentCommandBuffer_ presentDrawable:currentDrawable_];
+            }
+            [currentCommandBuffer_ commit];
+            currentCommandBuffer_ = nil;
+            currentDrawable_      = nil;
+        }
     }
-}
 
     void MetalRenderDevice::present() {
         if (currentCommandBuffer_ && currentDrawable_) {
@@ -500,8 +507,10 @@ void MetalRenderDevice::endFrame() {
     }
 
     TexturePtr MetalRenderDevice::getBackBuffer() {
-	    if (!currentDrawable_ || frameWidth_ == 0 || frameHeight_ == 0) return nullptr;
-   		 return nullptr; // Let beginRenderPass use currentDrawable_.texture directly
+        // The current drawable is owned by the layer and consumed each frame.
+        // Render passes reach it via currentDrawable_.texture inside beginRenderPass,
+        // so there is no stable Texture handle to expose here.
+        return nullptr;
     }
 
     TexturePtr MetalRenderDevice::getDepthBuffer() {

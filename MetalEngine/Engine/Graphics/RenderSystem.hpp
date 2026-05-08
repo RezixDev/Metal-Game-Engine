@@ -2,7 +2,7 @@
 #pragma once
 #include "RenderDevice.hpp"
 #include "GeometryBuilder.hpp"
-#include "../Core/Math.hpp"
+#include "../Math/Math.hpp"
 #include <memory>
 #include <vector>
 #include <string>
