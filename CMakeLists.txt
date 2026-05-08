@@ -37,7 +37,6 @@ find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
 # ===================================
 
 set(ENGINE_SOURCES
-        MetalEngine/Engine/Graphics/RenderSystem.cpp
         MetalEngine/Engine/Graphics/VertexLayout.cpp
         MetalEngine/Engine/Graphics/Metal/MetalRenderDevice.mm
 )

@@ -4,7 +4,6 @@
 
 #include "MetalApplication.hpp"
 #include "Engine/Graphics/Metal/MetalRenderDevice.hpp"
-#include "Engine/Graphics/RenderSystem.hpp"
 
 #include <cstdio>
 
@@ -46,7 +45,6 @@ void MetalApplication::onInitialize(Engine::Graphics::RenderDevicePtr device) {
     if (isInitialized_) return;
 
     renderDevice_ = std::move(device);
-    Engine::Graphics::RenderSystem::getInstance().initialize(renderDevice_);
     renderer_ = std::make_unique<Renderer>(renderDevice_);
 
     camera_->setFieldOfView(60.0f);
@@ -54,7 +52,6 @@ void MetalApplication::onInitialize(Engine::Graphics::RenderDevicePtr device) {
     camera_->setFarPlane(100.0f);
     camera_->setMovementSpeed(moveSpeed_);
     camera_->setMouseSensitivity(mouseSensitivity_);
-    camera_->setMovementType(Engine::CameraMovementType::FPS);
 
     setupScene();
     isInitialized_ = true;
@@ -120,7 +117,6 @@ void MetalApplication::onShutdown() {
     if (!isInitialized_) return;
     sceneObjects_.clear();
     renderer_.reset();
-    Engine::Graphics::RenderSystem::getInstance().shutdown();
     renderDevice_.reset();
     isInitialized_ = false;
 }
