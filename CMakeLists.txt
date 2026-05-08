@@ -6,18 +6,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_OBJCXX_STANDARD 17)
-
 set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
 endif()
-
-add_compile_options(
-        -Wall
-        -Wextra
-        -Wno-unused-parameter
-)
 
 if(NOT APPLE)
     message(FATAL_ERROR "MetalEngine requires macOS")
@@ -32,26 +25,11 @@ find_library(METALKIT_FRAMEWORK   MetalKit   REQUIRED)
 find_library(QUARTZCORE_FRAMEWORK QuartzCore REQUIRED)
 find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
 
-# ===================================
-# Engine sources
-# ===================================
-
-set(ENGINE_SOURCES
-        MetalEngine/Engine/Graphics/VertexLayout.cpp
-        MetalEngine/Engine/Graphics/Metal/MetalRenderDevice.mm
-)
-
-set(APP_SOURCES
+add_executable(${PROJECT_NAME} MACOSX_BUNDLE
         MetalEngine/main.m
         MetalEngine/AppDelegate.m
         MetalEngine/MyMetalView.mm
-        MetalEngine/MetalApplication.mm
-        MetalEngine/Renderer.mm
-)
-
-add_executable(${PROJECT_NAME} MACOSX_BUNDLE
-        ${ENGINE_SOURCES}
-        ${APP_SOURCES}
+        MetalEngine/MetalRenderer.mm
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
@@ -71,6 +49,11 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
         OBJCXX_STANDARD 17
         CXX_STANDARD 17
         LINKER_LANGUAGE OBJCXX
+)
+
+target_compile_options(${PROJECT_NAME} PRIVATE
+        -Wall -Wextra -Wno-unused-parameter
+        $<$<COMPILE_LANGUAGE:OBJC,OBJCXX>:-fobjc-arc>
 )
 
 # ===================================
@@ -107,7 +90,6 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         $<TARGET_BUNDLE_DIR:${PROJECT_NAME}>/Contents/Resources/
 )
 
-# Copy assets if they exist
 if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/MetalEngine/Assets.xcassets)
     add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
             COMMAND ${CMAKE_COMMAND} -E copy_directory

@@ -1,5 +1,7 @@
 // MyMetalView.h
+#pragma once
 
-#import <AppKit/AppKit.h>
-@interface MyMetalView : NSView
+#import <MetalKit/MetalKit.h>
+
+@interface MyMetalView : MTKView
 @end

@@ -1,7 +1,7 @@
-// Engine/Scene/Camera.hpp
+// Engine/Camera.hpp
 #pragma once
 
-#include "../Math/Math.hpp"
+#include "Math.hpp"
 
 namespace Engine {
 
@@ -14,8 +14,6 @@ public:
         lookAt(position, target, up);
     }
 
-    // ---- View / projection ----------------------------------------------------
-
     Math::Mat4 getViewMatrix() const {
         return Math::Matrix::lookAt(position_, position_ + getForward(), worldUp_);
     }
@@ -23,8 +21,6 @@ public:
     Math::Mat4 getProjectionMatrix(float aspect) const {
         return Math::Matrix::perspectiveDegrees(fov_, aspect, nearPlane_, farPlane_);
     }
-
-    // ---- Setup ----------------------------------------------------------------
 
     void lookAt(const Math::Vec3& position,
                 const Math::Vec3& target,
@@ -43,8 +39,6 @@ public:
     void setMovementSpeed(float s)        { movementSpeed_ = s; }
     void setMouseSensitivity(float s)     { mouseSensitivity_ = s; }
 
-    // ---- State queries --------------------------------------------------------
-
     Math::Vec3 getPosition() const { return position_; }
 
     Math::Vec3 getForward() const {
@@ -61,20 +55,18 @@ public:
         return Math::Vector::normalize(Math::Vector::cross(getForward(), worldUp_));
     }
 
-    // ---- Input ----------------------------------------------------------------
-
     void processMovement(float deltaTime,
                          bool forward, bool backward,
                          bool left,    bool right,
                          bool up,      bool down) {
         const float v = movementSpeed_ * deltaTime;
-        const Math::Vec3 fwd   = getForward();
-        const Math::Vec3 rgt   = getRight();
-        Math::Vec3 movement = Math::Vector::Constants::ZERO;
-        if (forward)  movement += fwd * v;
-        if (backward) movement -= fwd * v;
-        if (right)    movement += rgt * v;
-        if (left)     movement -= rgt * v;
+        const Math::Vec3 fwd = getForward();
+        const Math::Vec3 rgt = getRight();
+        Math::Vec3 movement  = Math::Vector::Constants::ZERO;
+        if (forward)  movement += fwd     * v;
+        if (backward) movement -= fwd     * v;
+        if (right)    movement += rgt     * v;
+        if (left)     movement -= rgt     * v;
         if (up)       movement += worldUp_ * v;
         if (down)     movement -= worldUp_ * v;
         position_ += movement;
@@ -89,7 +81,7 @@ public:
 private:
     Math::Vec3 position_{0.0f, 0.0f, 5.0f};
     Math::Vec3 worldUp_ = Math::Vector::Constants::UP;
-    float yaw_   = -90.0f; // facing -Z by default
+    float yaw_   = -90.0f;
     float pitch_ = 0.0f;
 
     float fov_              = 60.0f;
