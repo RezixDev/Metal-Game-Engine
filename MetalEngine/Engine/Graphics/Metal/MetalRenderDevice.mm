@@ -167,9 +167,8 @@ MTLVertexDescriptor* MetalPipeline::createMetalVertexDescriptor(const VertexLayo
 
 // ---- MetalCommandBuffer ---------------------------------------------------
 
-MetalCommandBuffer::MetalCommandBuffer(id<MTLCommandBuffer> commandBuffer,
-                                       id<MTLRenderCommandEncoder> encoder)
-    : commandBuffer_(commandBuffer), encoder_(encoder), indexBuffer_(nil) {}
+MetalCommandBuffer::MetalCommandBuffer(id<MTLRenderCommandEncoder> encoder)
+    : encoder_(encoder), indexBuffer_(nil) {}
 
 void MetalCommandBuffer::setViewport(int x, int y, int width, int height) {
     MTLViewport viewport = {
@@ -353,7 +352,7 @@ CommandBufferPtr MetalRenderDevice::beginRenderPass(const RenderPassDescriptor& 
         [currentCommandBuffer_ renderCommandEncoderWithDescriptor:renderPassDescriptor];
     if (!encoder) throw std::runtime_error("Failed to create render command encoder");
 
-    return std::make_shared<MetalCommandBuffer>(currentCommandBuffer_, encoder);
+    return std::make_shared<MetalCommandBuffer>(encoder);
 }
 
 void MetalRenderDevice::endRenderPass(CommandBufferPtr commandBuffer) {

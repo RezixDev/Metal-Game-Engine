@@ -80,8 +80,7 @@ private:
 
 class MetalCommandBuffer : public CommandBuffer {
 public:
-    MetalCommandBuffer(id<MTLCommandBuffer> commandBuffer,
-                       id<MTLRenderCommandEncoder> encoder);
+    explicit MetalCommandBuffer(id<MTLRenderCommandEncoder> encoder);
 
     void setViewport(int x, int y, int width, int height) override;
     void setPipeline(PipelinePtr pipeline) override;
@@ -100,10 +99,9 @@ public:
     static MTLPrimitiveType toMetalPrimitiveType(PrimitiveType type);
 
 private:
-    id<MTLCommandBuffer>          commandBuffer_;
-    id<MTLRenderCommandEncoder>   encoder_;
+    id<MTLRenderCommandEncoder>    encoder_;
     std::shared_ptr<MetalPipeline> currentPipeline_;
-    id<MTLBuffer>                 indexBuffer_;
+    id<MTLBuffer>                  indexBuffer_;
 };
 
 class MetalRenderDevice : public RenderDevice {
