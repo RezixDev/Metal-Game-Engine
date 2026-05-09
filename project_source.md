@@ -50,6 +50,8 @@ find_library(METAL_FRAMEWORK      Metal      REQUIRED)
 find_library(METALKIT_FRAMEWORK   MetalKit   REQUIRED)
 find_library(QUARTZCORE_FRAMEWORK QuartzCore REQUIRED)
 find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
+find_library(MPS_FRAMEWORK        MetalPerformanceShaders      REQUIRED)
+find_library(MPSGRAPH_FRAMEWORK   MetalPerformanceShadersGraph REQUIRED)
 
 add_executable(${PROJECT_NAME} MACOSX_BUNDLE
         MetalEngine/main.m
@@ -68,6 +70,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         ${METALKIT_FRAMEWORK}
         ${QUARTZCORE_FRAMEWORK}
         ${FOUNDATION_FRAMEWORK}
+        ${MPS_FRAMEWORK}
+        ${MPSGRAPH_FRAMEWORK}
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -555,7 +559,7 @@ inline Mat4 perspectiveDegrees(float fovDegrees, float aspect, float nearZ, floa
 namespace Engine {
 
 // One particle's persistent state — position, velocity, and alive flag.
-// 64 bytes, matching the GPU packed layout.
+// 64 bytes, matching the GPU float3 layout (simd_float3 = 16 bytes on Apple).
 struct Particle {
     simd_float3 position;      // 16B (simd-aligned)
     simd_float3 velocity;      // 16B
@@ -566,18 +570,6 @@ struct Particle {
 };
 static_assert(sizeof(Particle) == 64, "Particle must be 64 bytes");
 
-// A tiny neural network for each particle.
-// Network: 4 inputs → 4 hidden (ReLU) → 2 outputs (acceleration x, z).
-// We use float4x4 for both layers (output layer wastes 2 rows but keeps
-// alignment simple and lets us use a single matrix multiply).
-struct Brain {
-    matrix_float4x4 w1;   // 64B — hidden layer weights
-    simd_float4     b1;   // 16B — hidden layer bias
-    matrix_float4x4 w2;   // 64B — output layer weights (only .xy used)
-    simd_float4     b2;   // 16B — output layer bias   (only .xy used)
-};
-static_assert(sizeof(Brain) == 160, "Brain must be 160 bytes");
-
 // Predator — orbits the origin and scares nearby particles.
 struct Predator {
     simd_float3 position;  // 12B + 4B padding (simd alignment)
@@ -585,9 +577,15 @@ struct Predator {
 };
 static_assert(sizeof(Predator) == 32, "Predator must be 32 bytes");
 
+// NOTE: Brain struct removed — neural network weights now live in MPSGraph
+// as shared tensors (all particles use the same brain, mutated in real-time).
+
 // Constants
 constexpr uint32_t kParticleCount = 500000;
 constexpr uint32_t kPredatorCount = 5;
+constexpr uint32_t kInputSize     = 4;   // [cursor_dx, cursor_dy, noise, bias]
+constexpr uint32_t kHiddenSize    = 16;  // wider hidden layer for shared brain
+constexpr uint32_t kOutputSize    = 2;   // [accel_x, accel_y]
 
 } // namespace Engine
 
@@ -645,6 +643,9 @@ private:
 // Particle sandbox — cursor tracking for particle flocking.
 - (void)setCursorScreenPosition:(CGPoint)pt viewSize:(CGSize)viewSize;
 
+// Brain mutation — change swarm personality in real-time.
+- (void)mutateBrain:(float)factor;
+
 @end
 
 ```
@@ -659,6 +660,8 @@ private:
 #include "Engine/Geometry.hpp"
 #include "Engine/ParticleSystem.hpp"
 #include "Engine/Time.hpp"
+#import <MetalPerformanceShaders/MetalPerformanceShaders.h>
+#import <MetalPerformanceShadersGraph/MetalPerformanceShadersGraph.h>
 
 #include <vector>
 #include <cstring>
@@ -673,6 +676,8 @@ constexpr unsigned short kVK_ANSI_D = 0x02;
 constexpr unsigned short kVK_ANSI_Q = 0x0C;
 constexpr unsigned short kVK_ANSI_W = 0x0D;
 constexpr unsigned short kVK_ANSI_R = 0x0F;
+constexpr unsigned short kVK_ANSI_1 = 0x12;
+constexpr unsigned short kVK_ANSI_2 = 0x13;
 constexpr unsigned short kVK_Space  = 0x31;
 
 // 2D front-facing debug view — camera looks directly at the XY plane.
@@ -724,11 +729,19 @@ struct SceneObject {
 
     // ---- Particle Sandbox ----
     id<MTLBuffer>               _particleBuffer;
-    id<MTLBuffer>               _brainBuffer;
     id<MTLBuffer>               _predatorBuffer;
-    id<MTLComputePipelineState> _computePipelineParticles;
+    id<MTLComputePipelineState> _computePipelinePrepare;
+    id<MTLComputePipelineState> _computePipelinePhysics;
     id<MTLComputePipelineState> _computePipelinePredators;
     id<MTLRenderPipelineState>  _particleRenderPipeline;
+
+    // ---- MPSGraph ----
+    MPSGraph                   *_brainGraph;
+    MPSGraphExecutable         *_brainExecutable;
+    id<MTLBuffer>               _featureBuffer;
+    id<MTLBuffer>               _accelBuffer;
+    MPSGraphTensor             *_inputTensor;
+    MPSGraphTensor             *_outputTensor;
 
     NSUInteger                  _particleCount;
     simd_float2                 _cursorWorld;
@@ -813,13 +826,13 @@ struct SceneObject {
     id<MTLLibrary> lib = [_device newDefaultLibrary];
     NSError *error = nil;
 
-    id<MTLFunction> fnParticles = [lib newFunctionWithName:@"updateParticles"];
-    _computePipelineParticles = [_device newComputePipelineStateWithFunction:fnParticles
-                                                                      error:&error];
-    if (!_computePipelineParticles) {
-        [NSException raise:@"MetalRenderer"
-                    format:@"Failed to create particle compute pipeline: %@", error];
-    }
+    id<MTLFunction> fnPrepare = [lib newFunctionWithName:@"prepareFeatures"];
+    _computePipelinePrepare = [_device newComputePipelineStateWithFunction:fnPrepare error:&error];
+    if (!_computePipelinePrepare) [NSException raise:@"MetalRenderer" format:@"Failed to create prepareFeatures pipeline: %@", error];
+
+    id<MTLFunction> fnPhysics = [lib newFunctionWithName:@"applyPhysics"];
+    _computePipelinePhysics = [_device newComputePipelineStateWithFunction:fnPhysics error:&error];
+    if (!_computePipelinePhysics) [NSException raise:@"MetalRenderer" format:@"Failed to create applyPhysics pipeline: %@", error];
 
     id<MTLFunction> fnPredators = [lib newFunctionWithName:@"updatePredators"];
     _computePipelinePredators = [_device newComputePipelineStateWithFunction:fnPredators
@@ -885,41 +898,17 @@ struct SceneObject {
         _particleBuffer.label = @"ParticleBuffer";
     }
 
-    // ---- Brains: identity-like weights that gently steer toward cursor ----
-    {
-        std::vector<Engine::Brain> brains(_particleCount);
-        for (NSUInteger i = 0; i < _particleCount; ++i) {
-            // Hidden layer: pass through with slight randomisation
-            float r1 = (rand() / (float)RAND_MAX - 0.5f) * 0.1f;
-            float r2 = (rand() / (float)RAND_MAX - 0.5f) * 0.1f;
-            float r3 = (rand() / (float)RAND_MAX - 0.5f) * 0.1f;
-            float r4 = (rand() / (float)RAND_MAX - 0.5f) * 0.1f;
+    // ---- MPSGraph Buffers ----
+    NSUInteger featureBytes = _particleCount * Engine::kInputSize * sizeof(float);
+    _featureBuffer = [_device newBufferWithLength:featureBytes options:MTLResourceStorageModePrivate];
+    _featureBuffer.label = @"FeatureBuffer";
+    
+    NSUInteger accelBytes = _particleCount * Engine::kOutputSize * sizeof(float);
+    _accelBuffer = [_device newBufferWithLength:accelBytes options:MTLResourceStorageModePrivate];
+    _accelBuffer.label = @"AccelBuffer";
 
-            brains[i].w1 = (matrix_float4x4){{
-                {1.0f + r1, 0, 0, 0},
-                {0, 1.0f + r2, 0, 0},
-                {0, 0, 1.0f + r3, 0},
-                {0, 0, 0, 1.0f + r4},
-            }};
-            brains[i].b1 = simd_make_float4(0, 0, 0, 0);
-
-            // Output layer: map hidden[0,1] (cursor dx, dz) → acceleration
-            // Strong gain so particles visibly accelerate toward cursor
-            float gain = 0.6f + (rand() / (float)RAND_MAX) * 0.4f;
-            float cross = (rand() / (float)RAND_MAX - 0.5f) * 0.05f;
-            brains[i].w2 = (matrix_float4x4){{
-                {gain,  cross, 0, 0},
-                {cross, gain,  0, 0},
-                {0, 0, 0, 0},
-                {0, 0, 0, 0},
-            }};
-            brains[i].b2 = simd_make_float4(0, 0, 0, 0);
-        }
-        _brainBuffer = [_device newBufferWithBytes:brains.data()
-                                            length:brains.size() * sizeof(Engine::Brain)
-                                           options:MTLResourceStorageModeShared];
-        _brainBuffer.label = @"BrainBuffer";
-    }
+    // Build the brain
+    [self buildBrainGraphWithFactor:1.0f];
 
     // ---- Predators: initial positions in orbit ----
     {
@@ -937,6 +926,71 @@ struct SceneObject {
 
     NSLog(@"🧠 Particle Sandbox: %lu particles, %u predators initialised",
           (unsigned long)_particleCount, Engine::kPredatorCount);
+}
+
+
+- (void)buildBrainGraphWithFactor:(float)factor {
+    _brainGraph = [[MPSGraph alloc] init];
+    
+    // Input: [N, 4]
+    _inputTensor = [_brainGraph placeholderWithShape:@[@(Engine::kParticleCount), @(Engine::kInputSize)]
+                                            dataType:MPSDataTypeFloat32
+                                                name:@"features"];
+    
+    // Hidden layer weights [4, 16]
+    float w1[Engine::kInputSize * Engine::kHiddenSize];
+    for (int i = 0; i < Engine::kInputSize * Engine::kHiddenSize; ++i) {
+        w1[i] = (rand() / (float)RAND_MAX - 0.5f) * 0.1f;
+    }
+    // Boost cursor x/y weights to ensure response
+    w1[0] = 1.0f; w1[1] = 0.0f; w1[2] = 0.0f; w1[3] = 0.0f; // x -> h[0]
+    w1[1*Engine::kHiddenSize + 1] = 1.0f;                   // y -> h[1]
+
+    NSData *w1Data = [NSData dataWithBytes:w1 length:sizeof(w1)];
+    MPSGraphTensor *w1T = [_brainGraph constantWithData:w1Data
+                                                  shape:@[@(Engine::kInputSize), @(Engine::kHiddenSize)]
+                                               dataType:MPSDataTypeFloat32];
+    
+    float b1[Engine::kHiddenSize] = {0};
+    NSData *b1Data = [NSData dataWithBytes:b1 length:sizeof(b1)];
+    MPSGraphTensor *b1T = [_brainGraph constantWithData:b1Data
+                                                  shape:@[@(1), @(Engine::kHiddenSize)]
+                                               dataType:MPSDataTypeFloat32];
+    
+    MPSGraphTensor *h = [_brainGraph matrixMultiplicationWithPrimaryTensor:_inputTensor secondaryTensor:w1T name:nil];
+    h = [_brainGraph additionWithPrimaryTensor:h secondaryTensor:b1T name:nil];
+    h = [_brainGraph reLUWithTensor:h name:@"hidden"];
+    
+    // Output layer weights [16, 2]
+    float w2[Engine::kHiddenSize * Engine::kOutputSize] = {0};
+    // Map h[0] -> accel_x, h[1] -> accel_y
+    w2[0] = factor; // h[0] -> out[0]
+    w2[1*Engine::kOutputSize + 1] = factor; // h[1] -> out[1]
+    
+    NSData *w2Data = [NSData dataWithBytes:w2 length:sizeof(w2)];
+    MPSGraphTensor *w2T = [_brainGraph constantWithData:w2Data
+                                                  shape:@[@(Engine::kHiddenSize), @(Engine::kOutputSize)]
+                                               dataType:MPSDataTypeFloat32];
+    
+    float b2[Engine::kOutputSize] = {0};
+    NSData *b2Data = [NSData dataWithBytes:b2 length:sizeof(b2)];
+    MPSGraphTensor *b2T = [_brainGraph constantWithData:b2Data
+                                                  shape:@[@(1), @(Engine::kOutputSize)]
+                                               dataType:MPSDataTypeFloat32];
+    
+    MPSGraphTensor *out = [_brainGraph matrixMultiplicationWithPrimaryTensor:h secondaryTensor:w2T name:nil];
+    _outputTensor = [_brainGraph additionWithPrimaryTensor:out secondaryTensor:b2T name:@"acceleration"];
+    
+    MPSGraphDevice *graphDevice = [MPSGraphDevice deviceWithMTLDevice:_device];
+    _brainExecutable = [_brainGraph compileWithDevice:graphDevice
+                                          feeds:@{ _inputTensor: [[MPSGraphShapedType alloc] initWithShape:@[@(Engine::kParticleCount), @(Engine::kInputSize)] dataType:MPSDataTypeFloat32] }
+                                  targetTensors:@[_outputTensor]
+                               targetOperations:nil
+                            compilationDescriptor:nil];
+}
+
+- (void)mutateBrain:(float)factor {
+    [self buildBrainGraphWithFactor:factor];
 }
 
 - (void)addMesh:(const Engine::MeshData&)data
@@ -1052,7 +1106,7 @@ struct SceneObject {
         const matrix_float4x4 viewMat = _camera.getViewMatrix();
         const matrix_float4x4 projMat = _camera.getProjectionMatrix(aspect);
 
-        id<MTLCommandBuffer> cmd = [_commandQueue commandBuffer];
+        id<MTLCommandBuffer> cmd = [MPSCommandBuffer commandBufferFromCommandQueue:_commandQueue];
 
         // ==== Compute: Update Predators ====
         {
@@ -1067,22 +1121,56 @@ struct SceneObject {
             [compEnc endEncoding];
         }
 
-        // ==== Compute: Update Particles (Neural Network + Physics) ====
+        // ==== Compute: Prepare Features ====
         {
             id<MTLComputeCommandEncoder> compEnc = [cmd computeCommandEncoder];
-            [compEnc setComputePipelineState:_computePipelineParticles];
-            [compEnc setBuffer:_particleBuffer  offset:0 atIndex:0];
-            [compEnc setBuffer:_brainBuffer     offset:0 atIndex:1];
-            [compEnc setBuffer:_predatorBuffer  offset:0 atIndex:2];
-            uint32_t predCount = Engine::kPredatorCount;
-            [compEnc setBytes:&predCount      length:sizeof(uint32_t)    atIndex:3];
-            [compEnc setBytes:&_cursorWorld    length:sizeof(simd_float2) atIndex:4];
+            [compEnc setComputePipelineState:_computePipelinePrepare];
+            [compEnc setBuffer:_particleBuffer offset:0 atIndex:0];
+            [compEnc setBuffer:_featureBuffer offset:0 atIndex:1];
+            [compEnc setBytes:&_cursorWorld length:sizeof(simd_float2) atIndex:2];
             float dtCopy = dt;
-            [compEnc setBytes:&dtCopy         length:sizeof(float)       atIndex:5];
-            float maxSpeed = 10.0f;
-            [compEnc setBytes:&maxSpeed       length:sizeof(float)       atIndex:6];
+            [compEnc setBytes:&dtCopy length:sizeof(float) atIndex:3];
+            uint32_t pCount = _particleCount;
+            [compEnc setBytes:&pCount length:sizeof(uint32_t) atIndex:4];
 
-            NSUInteger threadgroupSize = _computePipelineParticles.maxTotalThreadsPerThreadgroup;
+            NSUInteger threadgroupSize = _computePipelinePrepare.maxTotalThreadsPerThreadgroup;
+            if (threadgroupSize > 256) threadgroupSize = 256;
+            MTLSize threads = MTLSizeMake(_particleCount, 1, 1);
+            MTLSize groups  = MTLSizeMake(threadgroupSize, 1, 1);
+            [compEnc dispatchThreads:threads threadsPerThreadgroup:groups];
+            [compEnc endEncoding];
+        }
+
+        // ==== MPSGraph: Inference ====
+        MPSGraphTensorData *inputData = [[MPSGraphTensorData alloc] initWithMTLBuffer:_featureBuffer
+                                                                                shape:@[@(_particleCount), @(Engine::kInputSize)]
+                                                                             dataType:MPSDataTypeFloat32];
+        MPSGraphTensorData *outputData = [[MPSGraphTensorData alloc] initWithMTLBuffer:_accelBuffer
+                                                                                 shape:@[@(_particleCount), @(Engine::kOutputSize)]
+                                                                              dataType:MPSDataTypeFloat32];
+
+        [_brainExecutable encodeToCommandBuffer:cmd
+                                     inputsArray:@[inputData]
+                                    resultsArray:@[outputData]
+                             executionDescriptor:nil];
+
+        // ==== Compute: Apply Physics ====
+        {
+            id<MTLComputeCommandEncoder> compEnc = [cmd computeCommandEncoder];
+            [compEnc setComputePipelineState:_computePipelinePhysics];
+            [compEnc setBuffer:_particleBuffer offset:0 atIndex:0];
+            [compEnc setBuffer:_accelBuffer offset:0 atIndex:1];
+            [compEnc setBuffer:_predatorBuffer offset:0 atIndex:2];
+            uint32_t predCount = Engine::kPredatorCount;
+            [compEnc setBytes:&predCount length:sizeof(uint32_t) atIndex:3];
+            float dtCopy = dt;
+            [compEnc setBytes:&dtCopy length:sizeof(float) atIndex:4];
+            float maxSpeed = 10.0f;
+            [compEnc setBytes:&maxSpeed length:sizeof(float) atIndex:5];
+            uint32_t pCount = _particleCount;
+            [compEnc setBytes:&pCount length:sizeof(uint32_t) atIndex:6];
+
+            NSUInteger threadgroupSize = _computePipelinePhysics.maxTotalThreadsPerThreadgroup;
             if (threadgroupSize > 256) threadgroupSize = 256;
             MTLSize threads = MTLSizeMake(_particleCount, 1, 1);
             MTLSize groups  = MTLSizeMake(threadgroupSize, 1, 1);
@@ -1157,6 +1245,12 @@ struct SceneObject {
         case kVK_ANSI_R:
             _camera.lookAt(kInitialPosition, kInitialTarget,
                            Engine::Math::Vector::Constants::UP);
+            break;
+        case kVK_ANSI_1:
+            [self mutateBrain:1.5f];
+            break;
+        case kVK_ANSI_2:
+            [self mutateBrain:-0.5f];
             break;
     }
 }
@@ -1379,16 +1473,6 @@ struct Predator {
     float  pad[3];    // 12 bytes padding to match CPU sizeof(Predator) = 32
 };
 
-// Tiny neural network per particle.
-// Network: 4 inputs → 4 hidden (ReLU) → 2 outputs (accel x,z).
-// Both layers use float4x4 for alignment; output layer uses only .xy.
-struct Brain {
-    float4x4 w1;   // hidden layer weights
-    float4   b1;   // hidden layer bias
-    float4x4 w2;   // output layer weights
-    float4   b2;   // output layer bias
-};
-
 // ============================================================================
 // Compute Kernel: Update Predators
 // ============================================================================
@@ -1411,54 +1495,73 @@ kernel void updatePredators(
 }
 
 // ============================================================================
-// Compute Kernel: Update Particles (Neural Network + Physics)
+// Compute Kernel: Prepare Features for MPSGraph Neural Network
 // ============================================================================
+//
+// Writes one float4 per particle: [cursor_dx, cursor_dy, noise, bias]
+// These become the input tensor for the shared brain (MPSGraph inference).
 
-kernel void updateParticles(
-    device Particle     *particles    [[buffer(0)]],
-    device Brain        *brains       [[buffer(1)]],
-    constant Predator   *predators    [[buffer(2)]],
-    constant uint       &predatorCount[[buffer(3)]],
-    constant float2     &cursorWorld  [[buffer(4)]],
-    constant float      &deltaTime   [[buffer(5)]],
-    constant float      &maxSpeed    [[buffer(6)]],
+kernel void prepareFeatures(
+    const device Particle *particles    [[buffer(0)]],
+    device float4         *features     [[buffer(1)]],
+    constant float2       &cursorWorld  [[buffer(2)]],
+    constant float        &deltaTime   [[buffer(3)]],
+    constant uint         &particleCount [[buffer(4)]],
     uint gid [[thread_position_in_grid]])
 {
+    if (gid >= particleCount) return;
+
+    Particle p = particles[gid];
+
+    if (p.alive == 0) {
+        features[gid] = float4(0.0f);
+        return;
+    }
+
+    float2 toCursor = cursorWorld - float2(p.position.x, p.position.y);
+    float  noise    = fract(sin(float(gid) * 12.9898f + deltaTime * 100.0f) * 43758.5453f);
+    features[gid]   = float4(toCursor.x, toCursor.y, noise, 1.0f);
+}
+
+// ============================================================================
+// Compute Kernel: Apply Physics (reads MPSGraph output + predator avoidance)
+// ============================================================================
+//
+// Reads the [N, 2] acceleration output from the neural network and applies
+// predator avoidance, drag, speed clamping, boundary forces, and integration.
+
+kernel void applyPhysics(
+    device Particle       *particles     [[buffer(0)]],
+    const device float2   *aiAccelIn     [[buffer(1)]],
+    constant Predator     *predators     [[buffer(2)]],
+    constant uint         &predatorCount [[buffer(3)]],
+    constant float        &deltaTime     [[buffer(4)]],
+    constant float        &maxSpeed      [[buffer(5)]],
+    constant uint         &particleCount [[buffer(6)]],
+    uint gid [[thread_position_in_grid]])
+{
+    if (gid >= particleCount) return;
+
     Particle p = particles[gid];
     if (p.alive == 0) return;
 
     float3 pos = p.position;
     float3 vel = p.velocity;
 
-    // ---- 1. Build neural network input ----
-    // [ distance-to-cursor-x, distance-to-cursor-y, noise, 1.0 (bias term) ]
-    float2 toCursor = cursorWorld - float2(pos.x, pos.y);
-    float  noise    = fract(sin(float(gid) * 12.9898f + deltaTime * 100.0f) * 43758.5453f);
-    float4 input    = float4(toCursor.x, toCursor.y, noise, 1.0f);
+    // ---- 1. Read neural network acceleration output ----
+    float2 aiAccel = aiAccelIn[gid];
 
-    // ---- 2. Forward pass through tiny neural network ----
-    Brain b = brains[gid];
-
-    // Hidden layer: h = ReLU(w1 * input + b1)
-    float4 hidden = b.w1 * input + b.b1;
-    hidden = max(hidden, float4(0.0));
-
-    // Output layer: out = (w2 * hidden + b2).xy → 2D acceleration
-    float4 raw_out = b.w2 * hidden + b.b2;
-    float2 aiAccel = raw_out.xy;
-
-    // ---- 3. Predator avoidance (rule-based override) ----
+    // ---- 2. Predator avoidance (rule-based override) ----
     for (uint i = 0; i < predatorCount; ++i) {
         float3 diff = pos - float3(predators[i].position);
         float  dist = length(diff);
         float  rad  = predators[i].radius;
         if (dist < rad && dist > 0.0001f) {
-            // Strong repulsion that scales with proximity
             aiAccel += float2(diff.x, diff.y) * (rad - dist) * 2.0f;
         }
     }
 
-    // ---- 4. Euler integration ----
+    // ---- 3. Euler integration ----
     float3 accel = float3(aiAccel.x, aiAccel.y, 0.0f);
     const float drag = 0.98f;
     vel = vel * drag + accel * deltaTime;
