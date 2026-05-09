@@ -11,8 +11,26 @@
 #include <vector>
 #include <cstring>
 #include <cstdlib>
+#include <cmath>
 
 namespace {
+
+// Marsaglia polar-method Gaussian sampler — zero mean, unit variance.
+static float gaussianRandom() {
+    static bool haveSpare = false;
+    static float spare;
+    if (haveSpare) { haveSpare = false; return spare; }
+    haveSpare = true;
+    float u, v, s;
+    do {
+        u = (rand() / (float)RAND_MAX) * 2.0f - 1.0f;
+        v = (rand() / (float)RAND_MAX) * 2.0f - 1.0f;
+        s = u * u + v * v;
+    } while (s >= 1.0f || s == 0.0f);
+    float mul = sqrtf(-2.0f * logf(s) / s);
+    spare = v * mul;
+    return u * mul;
+}
 
 // macOS virtual key codes used by the camera controls.
 constexpr unsigned short kVK_ANSI_A = 0x00;
@@ -85,7 +103,13 @@ struct SceneObject {
     MPSGraphExecutable         *_brainExecutable;
     id<MTLBuffer>               _featureBuffer;
     id<MTLBuffer>               _accelBuffer;
+    // Persistent weight buffers — Shared mode so CPU can mutate them without
+    // recompiling the graph. GPU reads them each frame via MPSGraphTensorData.
+    id<MTLBuffer>               _weightBufferL1;  // [kInputSize  × kHiddenSize]
+    id<MTLBuffer>               _weightBufferL2;  // [kHiddenSize × kOutputSize]
     MPSGraphTensor             *_inputTensor;
+    MPSGraphTensor             *_w1Tensor;
+    MPSGraphTensor             *_w2Tensor;
     MPSGraphTensor             *_outputTensor;
 
     NSUInteger                  _particleCount;
@@ -247,13 +271,38 @@ struct SceneObject {
     NSUInteger featureBytes = _particleCount * Engine::kInputSize * sizeof(float);
     _featureBuffer = [_device newBufferWithLength:featureBytes options:MTLResourceStorageModePrivate];
     _featureBuffer.label = @"FeatureBuffer";
-    
+
     NSUInteger accelBytes = _particleCount * Engine::kOutputSize * sizeof(float);
     _accelBuffer = [_device newBufferWithLength:accelBytes options:MTLResourceStorageModePrivate];
     _accelBuffer.label = @"AccelBuffer";
 
-    // Build the brain
-    [self buildBrainGraphWithFactor:1.0f];
+    // ---- Weight Buffers (Shared — CPU-mutable, GPU-readable) ----
+    const NSUInteger l1Count = Engine::kInputSize  * Engine::kHiddenSize;
+    const NSUInteger l2Count = Engine::kHiddenSize * Engine::kOutputSize;
+
+    _weightBufferL1 = [_device newBufferWithLength:l1Count * sizeof(float)
+                                           options:MTLResourceStorageModeShared];
+    _weightBufferL1.label = @"WeightBufferL1";
+
+    _weightBufferL2 = [_device newBufferWithLength:l2Count * sizeof(float)
+                                           options:MTLResourceStorageModeShared];
+    _weightBufferL2.label = @"WeightBufferL2";
+
+    // Gaussian-initialised weights — small σ so the network starts near linear.
+    float *w1 = (float *)_weightBufferL1.contents;
+    for (NSUInteger i = 0; i < l1Count; ++i) w1[i] = gaussianRandom() * 0.1f;
+    // Hard-wire cursor→hidden sensitivity so particles respond from frame one.
+    w1[0]                              = 1.0f; // input[0] (cursor x) → hidden[0]
+    w1[1 * Engine::kHiddenSize + 1]   = 1.0f; // input[1] (cursor y) → hidden[1]
+
+    float *w2 = (float *)_weightBufferL2.contents;
+    for (NSUInteger i = 0; i < l2Count; ++i) w2[i] = gaussianRandom() * 0.1f;
+    // Hard-wire hidden→output so accel_x and accel_y are live from the start.
+    w2[0]                              = 1.0f; // hidden[0] → accel_x
+    w2[1 * Engine::kOutputSize + 1]   = 1.0f; // hidden[1] → accel_y
+
+    // Build and compile the graph once — weights injected per-frame via feeds.
+    [self buildBrainGraph];
 
     // ---- Predators: initial positions in orbit ----
     {
@@ -274,68 +323,82 @@ struct SceneObject {
 }
 
 
-- (void)buildBrainGraphWithFactor:(float)factor {
+// Builds the MLP graph and compiles it once into _brainExecutable.
+// Weights (w1, w2) are placeholders backed by _weightBufferL1 / _weightBufferL2,
+// so the graph never needs to be recompiled when weights change.
+//
+// Placeholder creation order determines the inputsArray order used at inference:
+//   [0] _inputTensor  — feature buffer  [N, kInputSize]
+//   [1] _w1Tensor     — L1 weights      [kInputSize,  kHiddenSize]
+//   [2] _w2Tensor     — L2 weights      [kHiddenSize, kOutputSize]
+- (void)buildBrainGraph {
     _brainGraph = [[MPSGraph alloc] init];
-    
-    // Input: [N, 4]
+
+    // ---- Placeholders (creation order = inputsArray order) ----
     _inputTensor = [_brainGraph placeholderWithShape:@[@(Engine::kParticleCount), @(Engine::kInputSize)]
                                             dataType:MPSDataTypeFloat32
                                                 name:@"features"];
-    
-    // Hidden layer weights [4, 16]
-    float w1[Engine::kInputSize * Engine::kHiddenSize];
-    for (int i = 0; i < Engine::kInputSize * Engine::kHiddenSize; ++i) {
-        w1[i] = (rand() / (float)RAND_MAX - 0.5f) * 0.1f;
-    }
-    // Boost cursor x/y weights to ensure response
-    w1[0] = 1.0f; w1[1] = 0.0f; w1[2] = 0.0f; w1[3] = 0.0f; // x -> h[0]
-    w1[1*Engine::kHiddenSize + 1] = 1.0f;                   // y -> h[1]
 
-    NSData *w1Data = [NSData dataWithBytes:w1 length:sizeof(w1)];
-    MPSGraphTensor *w1T = [_brainGraph constantWithData:w1Data
-                                                  shape:@[@(Engine::kInputSize), @(Engine::kHiddenSize)]
+    _w1Tensor = [_brainGraph placeholderWithShape:@[@(Engine::kInputSize), @(Engine::kHiddenSize)]
+                                         dataType:MPSDataTypeFloat32
+                                             name:@"w1"];
+
+    _w2Tensor = [_brainGraph placeholderWithShape:@[@(Engine::kHiddenSize), @(Engine::kOutputSize)]
+                                         dataType:MPSDataTypeFloat32
+                                             name:@"w2"];
+
+    // ---- Biases remain constants (zero-initialised, rarely tuned) ----
+    float b1Vals[Engine::kHiddenSize]  = {};
+    float b2Vals[Engine::kOutputSize]  = {};
+    MPSGraphTensor *b1T = [_brainGraph constantWithData:[NSData dataWithBytes:b1Vals length:sizeof(b1Vals)]
+                                                  shape:@[@1, @(Engine::kHiddenSize)]
                                                dataType:MPSDataTypeFloat32];
-    
-    float b1[Engine::kHiddenSize] = {0};
-    NSData *b1Data = [NSData dataWithBytes:b1 length:sizeof(b1)];
-    MPSGraphTensor *b1T = [_brainGraph constantWithData:b1Data
-                                                  shape:@[@(1), @(Engine::kHiddenSize)]
+    MPSGraphTensor *b2T = [_brainGraph constantWithData:[NSData dataWithBytes:b2Vals length:sizeof(b2Vals)]
+                                                  shape:@[@1, @(Engine::kOutputSize)]
                                                dataType:MPSDataTypeFloat32];
-    
-    MPSGraphTensor *h = [_brainGraph matrixMultiplicationWithPrimaryTensor:_inputTensor secondaryTensor:w1T name:nil];
+
+    // ---- MLP forward pass: h = ReLU(input @ w1 + b1) ----
+    MPSGraphTensor *h = [_brainGraph matrixMultiplicationWithPrimaryTensor:_inputTensor
+                                                           secondaryTensor:_w1Tensor name:nil];
     h = [_brainGraph additionWithPrimaryTensor:h secondaryTensor:b1T name:nil];
     h = [_brainGraph reLUWithTensor:h name:@"hidden"];
-    
-    // Output layer weights [16, 2]
-    float w2[Engine::kHiddenSize * Engine::kOutputSize] = {0};
-    // Map h[0] -> accel_x, h[1] -> accel_y
-    w2[0] = factor; // h[0] -> out[0]
-    w2[1*Engine::kOutputSize + 1] = factor; // h[1] -> out[1]
-    
-    NSData *w2Data = [NSData dataWithBytes:w2 length:sizeof(w2)];
-    MPSGraphTensor *w2T = [_brainGraph constantWithData:w2Data
-                                                  shape:@[@(Engine::kHiddenSize), @(Engine::kOutputSize)]
-                                               dataType:MPSDataTypeFloat32];
-    
-    float b2[Engine::kOutputSize] = {0};
-    NSData *b2Data = [NSData dataWithBytes:b2 length:sizeof(b2)];
-    MPSGraphTensor *b2T = [_brainGraph constantWithData:b2Data
-                                                  shape:@[@(1), @(Engine::kOutputSize)]
-                                               dataType:MPSDataTypeFloat32];
-    
-    MPSGraphTensor *out = [_brainGraph matrixMultiplicationWithPrimaryTensor:h secondaryTensor:w2T name:nil];
-    _outputTensor = [_brainGraph additionWithPrimaryTensor:out secondaryTensor:b2T name:@"acceleration"];
-    
+
+    // ---- Output: out = h @ w2 + b2 ----
+    MPSGraphTensor *out = [_brainGraph matrixMultiplicationWithPrimaryTensor:h
+                                                             secondaryTensor:_w2Tensor name:nil];
+    _outputTensor = [_brainGraph additionWithPrimaryTensor:out secondaryTensor:b2T
+                                                      name:@"acceleration"];
+
+    // ---- Compile once — shapes for all three placeholders must be declared ----
     MPSGraphDevice *graphDevice = [MPSGraphDevice deviceWithMTLDevice:_device];
     _brainExecutable = [_brainGraph compileWithDevice:graphDevice
-                                          feeds:@{ _inputTensor: [[MPSGraphShapedType alloc] initWithShape:@[@(Engine::kParticleCount), @(Engine::kInputSize)] dataType:MPSDataTypeFloat32] }
-                                  targetTensors:@[_outputTensor]
-                               targetOperations:nil
-                            compilationDescriptor:nil];
+        feeds:@{
+            _inputTensor: [[MPSGraphShapedType alloc] initWithShape:@[@(Engine::kParticleCount), @(Engine::kInputSize)]  dataType:MPSDataTypeFloat32],
+            _w1Tensor:    [[MPSGraphShapedType alloc] initWithShape:@[@(Engine::kInputSize),     @(Engine::kHiddenSize)] dataType:MPSDataTypeFloat32],
+            _w2Tensor:    [[MPSGraphShapedType alloc] initWithShape:@[@(Engine::kHiddenSize),    @(Engine::kOutputSize)] dataType:MPSDataTypeFloat32],
+        }
+        targetTensors:@[_outputTensor]
+        targetOperations:nil
+        compilationDescriptor:nil];
 }
 
-- (void)mutateBrain:(float)factor {
-    [self buildBrainGraphWithFactor:factor];
+// Perturb a random subset of weights by Gaussian noise scaled by mutationRate.
+// Called on keypress — no recompilation needed because weights are placeholders.
+- (void)applyEvolutionStep:(float)mutationRate {
+    const NSUInteger l1Count = Engine::kInputSize  * Engine::kHiddenSize;
+    const NSUInteger l2Count = Engine::kHiddenSize * Engine::kOutputSize;
+
+    float *w1 = (float *)_weightBufferL1.contents;
+    for (NSUInteger i = 0; i < l1Count; ++i) {
+        if ((rand() / (float)RAND_MAX) < 0.3f)
+            w1[i] += gaussianRandom() * mutationRate;
+    }
+
+    float *w2 = (float *)_weightBufferL2.contents;
+    for (NSUInteger i = 0; i < l2Count; ++i) {
+        if ((rand() / (float)RAND_MAX) < 0.3f)
+            w2[i] += gaussianRandom() * mutationRate;
+    }
 }
 
 - (void)addMesh:(const Engine::MeshData&)data
@@ -487,15 +550,27 @@ struct SceneObject {
         }
 
         // ==== MPSGraph: Inference ====
-        MPSGraphTensorData *inputData = [[MPSGraphTensorData alloc] initWithMTLBuffer:_featureBuffer
-                                                                                shape:@[@(_particleCount), @(Engine::kInputSize)]
-                                                                             dataType:MPSDataTypeFloat32];
-        MPSGraphTensorData *outputData = [[MPSGraphTensorData alloc] initWithMTLBuffer:_accelBuffer
-                                                                                 shape:@[@(_particleCount), @(Engine::kOutputSize)]
-                                                                              dataType:MPSDataTypeFloat32];
+        // inputsArray order must match placeholder creation order in buildBrainGraph:
+        //   [0] features, [1] w1, [2] w2
+        MPSGraphTensorData *featureData = [[MPSGraphTensorData alloc]
+            initWithMTLBuffer:_featureBuffer
+                        shape:@[@(_particleCount), @(Engine::kInputSize)]
+                     dataType:MPSDataTypeFloat32];
+        MPSGraphTensorData *w1Data = [[MPSGraphTensorData alloc]
+            initWithMTLBuffer:_weightBufferL1
+                        shape:@[@(Engine::kInputSize), @(Engine::kHiddenSize)]
+                     dataType:MPSDataTypeFloat32];
+        MPSGraphTensorData *w2Data = [[MPSGraphTensorData alloc]
+            initWithMTLBuffer:_weightBufferL2
+                        shape:@[@(Engine::kHiddenSize), @(Engine::kOutputSize)]
+                     dataType:MPSDataTypeFloat32];
+        MPSGraphTensorData *outputData = [[MPSGraphTensorData alloc]
+            initWithMTLBuffer:_accelBuffer
+                        shape:@[@(_particleCount), @(Engine::kOutputSize)]
+                     dataType:MPSDataTypeFloat32];
 
         [_brainExecutable encodeToCommandBuffer:cmd
-                                     inputsArray:@[inputData]
+                                     inputsArray:@[featureData, w1Data, w2Data]
                                     resultsArray:@[outputData]
                              executionDescriptor:nil];
 
@@ -592,10 +667,10 @@ struct SceneObject {
                            Engine::Math::Vector::Constants::UP);
             break;
         case kVK_ANSI_1:
-            [self mutateBrain:1.5f];
+            [self applyEvolutionStep:0.1f];   // moderate mutation burst
             break;
         case kVK_ANSI_2:
-            [self mutateBrain:-0.5f];
+            [self applyEvolutionStep:0.01f];  // subtle fine-tuning nudge
             break;
     }
 }

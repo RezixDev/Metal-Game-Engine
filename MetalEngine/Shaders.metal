@@ -224,7 +224,7 @@ vertex ParticleVertexOut vs_particle(
     // Size shrinks with distance from camera
     float3 viewPos = (view * float4(pos, 1.0)).xyz;
     float  dist    = length(viewPos);
-    out.pointSize  = clamp(300.0f / (dist + 1.0f), 1.0f, 8.0f);
+    out.pointSize  = clamp(300.0f / (dist + 1.0f), 4.0f, 20.0f);
 
     return out;
 }

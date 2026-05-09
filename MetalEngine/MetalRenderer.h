@@ -16,7 +16,7 @@
 // Particle sandbox — cursor tracking for particle flocking.
 - (void)setCursorScreenPosition:(CGPoint)pt viewSize:(CGSize)viewSize;
 
-// Brain mutation — change swarm personality in real-time.
-- (void)mutateBrain:(float)factor;
+// Brain evolution — perturb weights without recompiling the MPSGraph executable.
+- (void)applyEvolutionStep:(float)mutationRate;
 
 @end
