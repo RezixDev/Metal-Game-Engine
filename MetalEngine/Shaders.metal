@@ -160,7 +160,7 @@ kernel void applyPhysics(
 
     // ---- 3. Euler integration ----
     float3 accel = float3(aiAccel.x, aiAccel.y, 0.0f);
-    const float drag = 0.98f;
+    const float drag = 0.95f;
     vel = vel * drag + accel * deltaTime;
 
     // Clamp speed
@@ -213,18 +213,16 @@ vertex ParticleVertexOut vs_particle(
 
     out.position = modelViewProjection * float4(pos, 1.0);
 
-    // Color based on speed: blue (slow) → orange (fast)
-    float3 vel   = p.velocity;
-    float  speed = length(vel);
-    float  t     = saturate(speed / 3.0f);
-    float4 slowColor = float4(0.2, 0.55, 1.0, 1.0);
-    float4 fastColor = float4(1.0, 0.4,  0.1, 1.0);
-    out.color = mix(slowColor, fastColor, t);
+    // DNA Color based on vertex ID
+    float hue = fract(float(vid) * 0.618033988749895);
+    // Convert hue to RGB using smooth function
+    float3 rgb = clamp(abs(fmod(hue * 6.0 + float3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
+    out.color = float4(rgb, 1.0);
 
     // Size shrinks with distance from camera
     float3 viewPos = (view * float4(pos, 1.0)).xyz;
     float  dist    = length(viewPos);
-    out.pointSize  = clamp(2500.0f / (dist + 1.0f), 20.0f, 100.0f);
+    out.pointSize  = clamp(2500.0f / (dist + 1.0f), 30.0f, 120.0f);
 
     return out;
 }
@@ -238,8 +236,8 @@ fragment float4 fs_particle(ParticleVertexOut in [[stage_in]],
     if (r > 0.5) discard_fragment();
     
     // Nucleus effect
-    if (r < 0.1) {
-        return float4(1.0, 1.0, 1.0, 1.0);
+    if (r < 0.15) {
+        return float4(min(in.color.rgb * 1.5, 1.0), 1.0);
     }
 
     float  glow = smoothstep(0.5, 0.0, r);

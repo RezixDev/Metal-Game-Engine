@@ -322,8 +322,8 @@ struct SceneObject {
   Engine::Particle *particles = (Engine::Particle *)_particleBuffer.contents;
   srand(42);
   for (NSUInteger i = 0; i < _particleCount; ++i) {
-    particles[i].position = {(rand() / (float)RAND_MAX - 0.5f) * 20.0f,
-                             (rand() / (float)RAND_MAX - 0.5f) * 20.0f, 0.0f};
+    particles[i].position = {((rand() / (float)RAND_MAX) * 30.0f) - 15.0f,
+                             ((rand() / (float)RAND_MAX) * 30.0f) - 15.0f, 0.0f};
     particles[i].velocity = {0, 0, 0};
     particles[i].acceleration = {0, 0, 0};
     particles[i].mass = 1.0f;
@@ -654,7 +654,7 @@ struct SceneObject {
       [compEnc setBytes:&predCount length:sizeof(uint32_t) atIndex:3];
       float dtCopy = dt;
       [compEnc setBytes:&dtCopy length:sizeof(float) atIndex:4];
-      float maxSpeed = 10.0f;
+      float maxSpeed = 5.0f;
       [compEnc setBytes:&maxSpeed length:sizeof(float) atIndex:5];
       uint32_t pCount = _particleCount;
       [compEnc setBytes:&pCount length:sizeof(uint32_t) atIndex:6];
