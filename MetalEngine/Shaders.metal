@@ -171,7 +171,7 @@ kernel void applyPhysics(
     pos += vel * deltaTime;
 
     // Soft boundary — nudge particles back toward center if they wander too far
-    const float boundary = 15.0f;
+    const float boundary = 20.0f;
     if (length(float2(pos.x, pos.y)) > boundary) {
         float2 toCenter = -normalize(float2(pos.x, pos.y));
         vel.x += toCenter.x * deltaTime * 5.0f;
@@ -224,7 +224,7 @@ vertex ParticleVertexOut vs_particle(
     // Size shrinks with distance from camera
     float3 viewPos = (view * float4(pos, 1.0)).xyz;
     float  dist    = length(viewPos);
-    out.pointSize  = clamp(300.0f / (dist + 1.0f), 4.0f, 20.0f);
+    out.pointSize  = clamp(2500.0f / (dist + 1.0f), 20.0f, 100.0f);
 
     return out;
 }
@@ -236,6 +236,12 @@ fragment float4 fs_particle(ParticleVertexOut in [[stage_in]],
     float2 uv   = pointCoord - 0.5;
     float  r    = length(uv);
     if (r > 0.5) discard_fragment();
+    
+    // Nucleus effect
+    if (r < 0.1) {
+        return float4(1.0, 1.0, 1.0, 1.0);
+    }
+
     float  glow = smoothstep(0.5, 0.0, r);
     return in.color * glow;
 }

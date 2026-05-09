@@ -31,7 +31,7 @@ static_assert(sizeof(Predator) == 32, "Predator must be 32 bytes");
 // as shared tensors (all particles use the same brain, mutated in real-time).
 
 // Constants
-constexpr uint32_t kParticleCount = 50000;
+constexpr uint32_t kParticleCount = 20;
 constexpr uint32_t kPredatorCount = 5;
 constexpr uint32_t kInputSize     = 4;   // [cursor_dx, cursor_dy, noise, bias]
 constexpr uint32_t kHiddenSize    = 16;  // wider hidden layer for shared brain
