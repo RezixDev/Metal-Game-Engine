@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_OBJCXX_STANDARD 17)
-set(CMAKE_OSX_DEPLOYMENT_TARGET "11.0")
+set(CMAKE_OSX_DEPLOYMENT_TARGET "26.0")
 
 if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Debug)
@@ -64,7 +64,7 @@ target_compile_options(${PROJECT_NAME} PRIVATE
 # finds it inside the app bundle.
 add_custom_command(
         OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/default.metallib
-        COMMAND xcrun -sdk macosx metal -gline-tables-only -frecord-sources -c
+        COMMAND xcrun -sdk macosx metal -std=metal4.0 -gline-tables-only -frecord-sources -c
                 ${CMAKE_CURRENT_SOURCE_DIR}/MetalEngine/Shaders.metal
                 -o ${CMAKE_CURRENT_BINARY_DIR}/Shaders.air
         COMMAND xcrun -sdk macosx metallib ${CMAKE_CURRENT_BINARY_DIR}/Shaders.air

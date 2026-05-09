@@ -6,6 +6,7 @@
     MetalRenderer *_renderer;
     NSPoint        _lastMouseLocation;
     BOOL           _firstMouseMove;
+    NSTrackingArea *_trackingArea;
 }
 
 - (instancetype)initWithFrame:(NSRect)frame {
@@ -26,6 +27,7 @@
     self.delegate = _renderer;
 
     NSLog(@"🎮 Controls: WASD=move, Space=up, Q=down, R=reset, Right-click+drag=look");
+    NSLog(@"🧠 Move cursor to attract particles — predators orbit and repel them");
     return self;
 }
 
@@ -34,7 +36,33 @@
 
 - (void)viewDidMoveToWindow {
     [super viewDidMoveToWindow];
-    if (self.window) [self.window makeFirstResponder:self];
+    if (self.window) {
+        [self.window makeFirstResponder:self];
+        // Accept mouse-moved events without needing a button press
+        [self.window setAcceptsMouseMovedEvents:YES];
+    }
+}
+
+// ---- Mouse Tracking -------------------------------------------------------
+
+- (void)updateTrackingAreas {
+    [super updateTrackingAreas];
+    if (_trackingArea) {
+        [self removeTrackingArea:_trackingArea];
+    }
+    _trackingArea = [[NSTrackingArea alloc]
+        initWithRect:self.bounds
+             options:(NSTrackingMouseMoved |
+                      NSTrackingActiveInKeyWindow |
+                      NSTrackingInVisibleRect)
+               owner:self
+            userInfo:nil];
+    [self addTrackingArea:_trackingArea];
+}
+
+- (void)mouseMoved:(NSEvent *)event {
+    NSPoint loc = [self convertPoint:event.locationInWindow fromView:nil];
+    [_renderer setCursorScreenPosition:loc viewSize:self.bounds.size];
 }
 
 // ---- Keyboard -------------------------------------------------------------

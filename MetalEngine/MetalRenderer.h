@@ -13,4 +13,7 @@
 - (void)setMouseLookEnabled:(BOOL)enabled;
 - (void)processMouseDeltaX:(float)dx deltaY:(float)dy;
 
+// Particle sandbox — cursor tracking for particle flocking.
+- (void)setCursorScreenPosition:(CGPoint)pt viewSize:(CGSize)viewSize;
+
 @end
