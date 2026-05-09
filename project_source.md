@@ -52,6 +52,8 @@ find_library(QUARTZCORE_FRAMEWORK QuartzCore REQUIRED)
 find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
 find_library(MPS_FRAMEWORK        MetalPerformanceShaders      REQUIRED)
 find_library(MPSGRAPH_FRAMEWORK   MetalPerformanceShadersGraph REQUIRED)
+find_library(AVFOUNDATION_FRAMEWORK AVFoundation REQUIRED)
+find_library(ACCELERATE_FRAMEWORK   Accelerate   REQUIRED)
 
 add_executable(${PROJECT_NAME} MACOSX_BUNDLE
         MetalEngine/main.m
@@ -72,10 +74,13 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         ${FOUNDATION_FRAMEWORK}
         ${MPS_FRAMEWORK}
         ${MPSGRAPH_FRAMEWORK}
+        ${AVFOUNDATION_FRAMEWORK}
+        ${ACCELERATE_FRAMEWORK}
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
         MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist
         OBJCXX_STANDARD 17
         CXX_STANDARD 17
         LINKER_LANGUAGE OBJCXX
@@ -581,9 +586,9 @@ static_assert(sizeof(Predator) == 32, "Predator must be 32 bytes");
 // as shared tensors (all particles use the same brain, mutated in real-time).
 
 // Constants
-constexpr uint32_t kParticleCount = 50000;
+constexpr uint32_t kParticleCount = 20;
 constexpr uint32_t kPredatorCount = 5;
-constexpr uint32_t kInputSize     = 4;   // [cursor_dx, cursor_dy, noise, bias]
+constexpr uint32_t kInputSize     = 7;   // [cursor_dx, cursor_dy, noise, bias, Bass, Mids, Highs]
 constexpr uint32_t kHiddenSize    = 16;  // wider hidden layer for shared brain
 constexpr uint32_t kOutputSize    = 2;   // [accel_x, accel_y]
 
@@ -662,6 +667,8 @@ private:
 #include "Engine/Time.hpp"
 #import <MetalPerformanceShaders/MetalPerformanceShaders.h>
 #import <MetalPerformanceShadersGraph/MetalPerformanceShadersGraph.h>
+#import <AVFoundation/AVFoundation.h>
+#import <Accelerate/Accelerate.h>
 
 #include <cmath>
 #include <cstdlib>
@@ -700,6 +707,7 @@ constexpr unsigned short kVK_ANSI_R = 0x0F;
 constexpr unsigned short kVK_ANSI_1 = 0x12;
 constexpr unsigned short kVK_ANSI_2 = 0x13;
 constexpr unsigned short kVK_Space = 0x31;
+constexpr unsigned short kVK_ANSI_C = 0x08;
 
 // 2D front-facing debug view — camera looks directly at the XY plane.
 // To restore 3D perspective: position={0,2,5}, target={0,0,0},
@@ -780,6 +788,20 @@ struct SceneObject {
   int _frameCount;
   float _fpsAccumulator;
   float _currentFPS;
+
+  // ---- Audio Reactivity ----
+  AVAudioEngine *_audioEngine;
+  simd_float3 _audioBands; // Bass, Mids, Highs
+  
+  FFTSetup _fftSetup;
+  DSPSplitComplex _fftComplex;
+  float *_fftWindow;
+  float *_fftMag;
+  uint32_t _log2n;
+  uint32_t _n;
+  uint32_t _nOver2;
+  
+  BOOL _enableCursorAttraction;
 }
 
 // ---- Setup ----------------------------------------------------------------
@@ -806,11 +828,109 @@ struct SceneObject {
   [self buildParticleRenderPipeline:view];
   [self buildScene];
   [self initParticleData];
+  [self setupAudioEngine];
 
   _elapsedTime = 0.0f;
   _cursorWorld = simd_make_float2(0, 0);
+  _enableCursorAttraction = NO;
 
   return self;
+}
+
+- (void)setupAudioEngine {
+    _audioEngine = [[AVAudioEngine alloc] init];
+    AVAudioInputNode *inputNode = _audioEngine.inputNode;
+    AVAudioFormat *format = [inputNode inputFormatForBus:0];
+    
+    // Request permission explicitly (helps with initial launch)
+    [AVCaptureDevice requestAccessForMediaType:AVMediaTypeAudio completionHandler:^(BOOL granted) {
+        if (!granted) {
+            NSLog(@"Microphone access denied.");
+        }
+    }];
+    
+    __weak MetalRenderer *weakSelf = self;
+    [inputNode installTapOnBus:0 bufferSize:4096 format:format block:^(AVAudioPCMBuffer *buffer, AVAudioTime *when) {
+        [weakSelf processAudioBuffer:buffer];
+    }];
+    
+    NSError *error;
+    [_audioEngine startAndReturnError:&error];
+    if (error) {
+        NSLog(@"Audio engine failed to start: %@", error);
+    }
+}
+
+- (void)processAudioBuffer:(AVAudioPCMBuffer *)buffer {
+    uint32_t len = buffer.frameLength;
+    if (len == 0) return;
+    
+    uint32_t log2n = log2f((float)len);
+    uint32_t n = 1 << log2n; // Use next lower power of 2
+    if (n > 8192) n = 8192;  // Cap
+    
+    uint32_t nOver2 = n / 2;
+    
+    if (_n != n) {
+        if (_fftSetup) vDSP_destroy_fftsetup(_fftSetup);
+        if (_fftComplex.realp) free(_fftComplex.realp);
+        if (_fftComplex.imagp) free(_fftComplex.imagp);
+        if (_fftWindow) free(_fftWindow);
+        if (_fftMag) free(_fftMag);
+        
+        _n = n;
+        _log2n = log2n;
+        _nOver2 = nOver2;
+        
+        _fftSetup = vDSP_create_fftsetup(_log2n, kFFTRadix2);
+        _fftComplex.realp = (float *)malloc(_nOver2 * sizeof(float));
+        _fftComplex.imagp = (float *)malloc(_nOver2 * sizeof(float));
+        _fftWindow = (float *)malloc(_n * sizeof(float));
+        _fftMag = (float *)malloc(_nOver2 * sizeof(float));
+        
+        vDSP_hann_window(_fftWindow, _n, vDSP_HALF_WINDOW);
+    }
+    
+    float *channelData = buffer.floatChannelData[0];
+    std::vector<float> windowedData(_n);
+    vDSP_vmul(channelData, 1, _fftWindow, 1, windowedData.data(), 1, _n);
+    
+    vDSP_ctoz((DSPComplex *)windowedData.data(), 2, &_fftComplex, 1, _nOver2);
+    vDSP_fft_zrip(_fftSetup, &_fftComplex, 1, _log2n, FFT_FORWARD);
+    vDSP_zvmags(&_fftComplex, 1, _fftMag, 1, _nOver2);
+    
+    // Frequency bands (assuming ~44.1kHz rate => Nyquist 22kHz)
+    int bassEnd = (int)(0.011f * _nOver2);
+    int midsEnd = (int)(0.18f * _nOver2);
+    int highsEnd = (int)(0.90f * _nOver2);
+    
+    if (bassEnd < 1) bassEnd = 1;
+    if (midsEnd <= bassEnd) midsEnd = bassEnd + 1;
+    if (highsEnd <= midsEnd) highsEnd = midsEnd + 1;
+    
+    float bass = 0.0f;
+    for(int i = 1; i < bassEnd; i++) bass += _fftMag[i];
+    bass /= (float)(bassEnd - 1 + 1e-5f);
+    
+    float mids = 0.0f;
+    for(int i = bassEnd; i < midsEnd; i++) mids += _fftMag[i];
+    mids /= (float)(midsEnd - bassEnd + 1e-5f);
+    
+    float highs = 0.0f;
+    for(int i = midsEnd; i < highsEnd; i++) highs += _fftMag[i];
+    highs /= (float)(highsEnd - midsEnd + 1e-5f);
+    
+    // Scale and normalize (adjust multiplier if needed based on mic sensitivity)
+    bass = fminf(sqrtf(bass) * 0.20f, 1.0f);
+    mids = fminf(sqrtf(mids) * 0.20f, 1.0f);
+    highs = fminf(sqrtf(highs) * 0.20f, 1.0f);
+    
+    // Thread safety: basic atomic-like read/write of simd_float3
+    _audioBands = simd_make_float3(
+        _audioBands.x * 0.7f + bass * 0.3f,
+        _audioBands.y * 0.7f + mids * 0.3f,
+        _audioBands.z * 0.7f + highs * 0.3f
+    );
 }
 
 - (void)buildPipelineForView:(MTKView *)view {
@@ -977,8 +1097,8 @@ struct SceneObject {
   Engine::Particle *particles = (Engine::Particle *)_particleBuffer.contents;
   srand(42);
   for (NSUInteger i = 0; i < _particleCount; ++i) {
-    particles[i].position = {(rand() / (float)RAND_MAX - 0.5f) * 20.0f,
-                             (rand() / (float)RAND_MAX - 0.5f) * 20.0f, 0.0f};
+    particles[i].position = {((rand() / (float)RAND_MAX) * 30.0f) - 15.0f,
+                             ((rand() / (float)RAND_MAX) * 30.0f) - 15.0f, 0.0f};
     particles[i].velocity = {0, 0, 0};
     particles[i].acceleration = {0, 0, 0};
     particles[i].mass = 1.0f;
@@ -996,6 +1116,9 @@ struct SceneObject {
   // Hard-wire cursor→hidden sensitivity so particles respond from frame one.
   w1[0] = 1.0f;                           // input[0] (cursor x) → hidden[0]
   w1[1 * Engine::kHiddenSize + 1] = 1.0f; // input[1] (cursor y) → hidden[1]
+  w1[4 * Engine::kHiddenSize + 2] = 2.0f; // input[4] (bass) -> hidden[2]
+  w1[5 * Engine::kHiddenSize + 3] = 2.0f; // input[5] (mids) -> hidden[3]
+  w1[6 * Engine::kHiddenSize + 4] = 2.0f; // input[6] (highs) -> hidden[4]
 
   float *w2 = (float *)_weightBufferL2.contents;
   for (NSUInteger i = 0; i < l2Count; ++i)
@@ -1003,6 +1126,9 @@ struct SceneObject {
   // Hard-wire hidden→output so accel_x and accel_y are live from the start.
   w2[0] = 1.0f;                           // hidden[0] → accel_x
   w2[1 * Engine::kOutputSize + 1] = 1.0f; // hidden[1] → accel_y
+  w2[2 * Engine::kOutputSize + 0] = 1.0f; // hidden[2] -> accel_x
+  w2[3 * Engine::kOutputSize + 1] = 1.0f; // hidden[3] -> accel_y
+  w2[4 * Engine::kOutputSize + 0] = -1.0f; // hidden[4] -> accel_x
 
   Engine::Predator *predators = (Engine::Predator *)_predatorBuffer.contents;
   for (uint32_t i = 0; i < Engine::kPredatorCount; ++i) {
@@ -1261,6 +1387,9 @@ struct SceneObject {
       [compEnc setBytes:&dtCopy length:sizeof(float) atIndex:3];
       uint32_t pCount = _particleCount;
       [compEnc setBytes:&pCount length:sizeof(uint32_t) atIndex:4];
+      [compEnc setBytes:&_audioBands length:sizeof(simd_float3) atIndex:5];
+      uint32_t enableCursor = _enableCursorAttraction ? 1 : 0;
+      [compEnc setBytes:&enableCursor length:sizeof(uint32_t) atIndex:6];
 
       NSUInteger threadgroupSize =
           _computePipelinePrepare.maxTotalThreadsPerThreadgroup;
@@ -1309,7 +1438,7 @@ struct SceneObject {
       [compEnc setBytes:&predCount length:sizeof(uint32_t) atIndex:3];
       float dtCopy = dt;
       [compEnc setBytes:&dtCopy length:sizeof(float) atIndex:4];
-      float maxSpeed = 10.0f;
+      float maxSpeed = 5.0f;
       [compEnc setBytes:&maxSpeed length:sizeof(float) atIndex:5];
       uint32_t pCount = _particleCount;
       [compEnc setBytes:&pCount length:sizeof(uint32_t) atIndex:6];
@@ -1370,6 +1499,7 @@ struct SceneObject {
     [enc setVertexBuffer:_particleBuffer offset:0 atIndex:0];
     [enc setVertexBytes:&mvp length:sizeof(mvp) atIndex:1];
     [enc setVertexBytes:&viewMat length:sizeof(viewMat) atIndex:2];
+    [enc setVertexBytes:&_audioBands length:sizeof(simd_float3) atIndex:3];
     [enc drawPrimitives:MTLPrimitiveTypePoint
             vertexStart:0
             vertexCount:_particleCount];
@@ -1410,6 +1540,9 @@ struct SceneObject {
     break;
   case kVK_ANSI_2:
     [self applyEvolutionStep:1.5f]; // subtle fine-tuning nudge
+    break;
+  case kVK_ANSI_C:
+    _enableCursorAttraction = !_enableCursorAttraction;
     break;
   }
 }
@@ -1674,11 +1807,13 @@ kernel void updatePredators(
 // These become the input tensor for the shared brain (MPSGraph inference).
 
 kernel void prepareFeatures(
-    const device Particle *particles    [[buffer(0)]],
-    device float4         *features     [[buffer(1)]],
-    constant float2       &cursorWorld  [[buffer(2)]],
-    constant float        &deltaTime   [[buffer(3)]],
+    const device Particle *particles     [[buffer(0)]],
+    device float          *features      [[buffer(1)]],
+    constant float2       &cursorWorld   [[buffer(2)]],
+    constant float        &deltaTime     [[buffer(3)]],
     constant uint         &particleCount [[buffer(4)]],
+    constant float3       &audioData     [[buffer(5)]],
+    constant uint         &enableCursor  [[buffer(6)]],
     uint gid [[thread_position_in_grid]])
 {
     if (gid >= particleCount) return;
@@ -1686,13 +1821,26 @@ kernel void prepareFeatures(
     Particle p = particles[gid];
 
     if (p.alive == 0) {
-        features[gid] = float4(0.0f);
+        for (int i = 0; i < 7; i++) {
+            features[gid * 7 + i] = 0.0f;
+        }
         return;
     }
 
-    float2 toCursor = cursorWorld - float2(p.position.x, p.position.y);
+    float2 toCursor = float2(0.0f);
+    if (enableCursor != 0) {
+        toCursor = cursorWorld - float2(p.position.x, p.position.y);
+    }
+    
     float  noise    = fract(sin(float(gid) * 12.9898f + deltaTime * 100.0f) * 43758.5453f);
-    features[gid]   = float4(toCursor.x, toCursor.y, noise, 1.0f);
+    
+    features[gid * 7 + 0] = toCursor.x;
+    features[gid * 7 + 1] = toCursor.y;
+    features[gid * 7 + 2] = noise;
+    features[gid * 7 + 3] = 1.0f;
+    features[gid * 7 + 4] = audioData.x; // Bass
+    features[gid * 7 + 5] = audioData.y; // Mids
+    features[gid * 7 + 6] = audioData.z; // Highs
 }
 
 // ============================================================================
@@ -1735,7 +1883,7 @@ kernel void applyPhysics(
 
     // ---- 3. Euler integration ----
     float3 accel = float3(aiAccel.x, aiAccel.y, 0.0f);
-    const float drag = 0.98f;
+    const float drag = 0.95f;
     vel = vel * drag + accel * deltaTime;
 
     // Clamp speed
@@ -1746,7 +1894,7 @@ kernel void applyPhysics(
     pos += vel * deltaTime;
 
     // Soft boundary — nudge particles back toward center if they wander too far
-    const float boundary = 15.0f;
+    const float boundary = 20.0f;
     if (length(float2(pos.x, pos.y)) > boundary) {
         float2 toCenter = -normalize(float2(pos.x, pos.y));
         vel.x += toCenter.x * deltaTime * 5.0f;
@@ -1767,12 +1915,14 @@ struct ParticleVertexOut {
     float4 position  [[position]];
     float4 color;
     float  pointSize [[point_size]];
+    float  bass;
 };
 
 vertex ParticleVertexOut vs_particle(
     const device Particle *particles             [[buffer(0)]],
     constant float4x4     &modelViewProjection   [[buffer(1)]],
     constant float4x4     &view                  [[buffer(2)]],
+    constant float3       &audioData             [[buffer(3)]],
     uint vid [[vertex_id]])
 {
     ParticleVertexOut out;
@@ -1783,23 +1933,24 @@ vertex ParticleVertexOut vs_particle(
         out.position  = float4(0, 0, 0, 0);
         out.pointSize = 0;
         out.color     = float4(0);
+        out.bass      = 0.0f;
         return out;
     }
 
     out.position = modelViewProjection * float4(pos, 1.0);
 
-    // Color based on speed: blue (slow) → orange (fast)
-    float3 vel   = p.velocity;
-    float  speed = length(vel);
-    float  t     = saturate(speed / 3.0f);
-    float4 slowColor = float4(0.2, 0.55, 1.0, 1.0);
-    float4 fastColor = float4(1.0, 0.4,  0.1, 1.0);
-    out.color = mix(slowColor, fastColor, t);
+    // DNA Color based on vertex ID
+    float hue = fract(float(vid) * 0.618033988749895);
+    // Convert hue to RGB using smooth function
+    float3 rgb = clamp(abs(fmod(hue * 6.0 + float3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
+    out.color = float4(rgb, 1.0);
 
-    // Size shrinks with distance from camera
+    out.bass = audioData.x;
+
+    // Size shrinks with distance from camera, pulses with bass heavily
     float3 viewPos = (view * float4(pos, 1.0)).xyz;
     float  dist    = length(viewPos);
-    out.pointSize  = clamp(300.0f / (dist + 1.0f), 4.0f, 20.0f);
+    out.pointSize  = clamp(2500.0f / (dist + 1.0f), 30.0f, 120.0f) * (1.0f + audioData.x * 4.0f);
 
     return out;
 }
@@ -1811,6 +1962,12 @@ fragment float4 fs_particle(ParticleVertexOut in [[stage_in]],
     float2 uv   = pointCoord - 0.5;
     float  r    = length(uv);
     if (r > 0.5) discard_fragment();
+    
+    // Nucleus effect pulses with bass heavily
+    if (r < 0.15) {
+        return float4(min(in.color.rgb * (1.5 + in.bass * 6.0), 1.0), 1.0);
+    }
+
     float  glow = smoothstep(0.5, 0.0, r);
     return in.color * glow;
 }

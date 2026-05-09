@@ -16,7 +16,8 @@ struct Particle {
     simd_float3 acceleration;  // 16B (reserved)
     float       mass;          //  4B
     uint32_t    alive;         //  4B
-    uint32_t    padding[2];    //  8B
+    float       trait;         //  4B
+    uint32_t    padding;       //  4B
 };
 static_assert(sizeof(Particle) == 64, "Particle must be 64 bytes");
 
@@ -33,7 +34,7 @@ static_assert(sizeof(Predator) == 32, "Predator must be 32 bytes");
 // Constants
 constexpr uint32_t kParticleCount = 20;
 constexpr uint32_t kPredatorCount = 5;
-constexpr uint32_t kInputSize     = 4;   // [cursor_dx, cursor_dy, noise, bias]
+constexpr uint32_t kInputSize     = 7;   // [cursor_dx, cursor_dy, noise, bias, Bass, Mids, Highs]
 constexpr uint32_t kHiddenSize    = 16;  // wider hidden layer for shared brain
 constexpr uint32_t kOutputSize    = 2;   // [accel_x, accel_y]
 

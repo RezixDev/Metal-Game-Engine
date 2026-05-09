@@ -7,6 +7,8 @@
 #include "Engine/Time.hpp"
 #import <MetalPerformanceShaders/MetalPerformanceShaders.h>
 #import <MetalPerformanceShadersGraph/MetalPerformanceShadersGraph.h>
+#import <AVFoundation/AVFoundation.h>
+#import <Accelerate/Accelerate.h>
 
 #include <cmath>
 #include <cstdlib>
@@ -45,6 +47,7 @@ constexpr unsigned short kVK_ANSI_R = 0x0F;
 constexpr unsigned short kVK_ANSI_1 = 0x12;
 constexpr unsigned short kVK_ANSI_2 = 0x13;
 constexpr unsigned short kVK_Space = 0x31;
+constexpr unsigned short kVK_ANSI_C = 0x08;
 
 // 2D front-facing debug view — camera looks directly at the XY plane.
 // To restore 3D perspective: position={0,2,5}, target={0,0,0},
@@ -125,6 +128,21 @@ struct SceneObject {
   int _frameCount;
   float _fpsAccumulator;
   float _currentFPS;
+
+  // ---- Audio Reactivity ----
+  AVAudioEngine *_audioEngine;
+  simd_float3 _audioBands; // Bass, Mids, Highs
+  simd_float3 _previousAudioBands;
+  
+  FFTSetup _fftSetup;
+  DSPSplitComplex _fftComplex;
+  float *_fftWindow;
+  float *_fftMag;
+  uint32_t _log2n;
+  uint32_t _n;
+  uint32_t _nOver2;
+  
+  BOOL _enableCursorAttraction;
 }
 
 // ---- Setup ----------------------------------------------------------------
@@ -151,11 +169,110 @@ struct SceneObject {
   [self buildParticleRenderPipeline:view];
   [self buildScene];
   [self initParticleData];
+  [self setupAudioEngine];
 
   _elapsedTime = 0.0f;
   _cursorWorld = simd_make_float2(0, 0);
+  _enableCursorAttraction = NO;
+  _previousAudioBands = simd_make_float3(0, 0, 0);
 
   return self;
+}
+
+- (void)setupAudioEngine {
+    _audioEngine = [[AVAudioEngine alloc] init];
+    AVAudioInputNode *inputNode = _audioEngine.inputNode;
+    AVAudioFormat *format = [inputNode inputFormatForBus:0];
+    
+    // Request permission explicitly (helps with initial launch)
+    [AVCaptureDevice requestAccessForMediaType:AVMediaTypeAudio completionHandler:^(BOOL granted) {
+        if (!granted) {
+            NSLog(@"Microphone access denied.");
+        }
+    }];
+    
+    __weak MetalRenderer *weakSelf = self;
+    [inputNode installTapOnBus:0 bufferSize:4096 format:format block:^(AVAudioPCMBuffer *buffer, AVAudioTime *when) {
+        [weakSelf processAudioBuffer:buffer];
+    }];
+    
+    NSError *error;
+    [_audioEngine startAndReturnError:&error];
+    if (error) {
+        NSLog(@"Audio engine failed to start: %@", error);
+    }
+}
+
+- (void)processAudioBuffer:(AVAudioPCMBuffer *)buffer {
+    uint32_t len = buffer.frameLength;
+    if (len == 0) return;
+    
+    uint32_t log2n = log2f((float)len);
+    uint32_t n = 1 << log2n; // Use next lower power of 2
+    if (n > 8192) n = 8192;  // Cap
+    
+    uint32_t nOver2 = n / 2;
+    
+    if (_n != n) {
+        if (_fftSetup) vDSP_destroy_fftsetup(_fftSetup);
+        if (_fftComplex.realp) free(_fftComplex.realp);
+        if (_fftComplex.imagp) free(_fftComplex.imagp);
+        if (_fftWindow) free(_fftWindow);
+        if (_fftMag) free(_fftMag);
+        
+        _n = n;
+        _log2n = log2n;
+        _nOver2 = nOver2;
+        
+        _fftSetup = vDSP_create_fftsetup(_log2n, kFFTRadix2);
+        _fftComplex.realp = (float *)malloc(_nOver2 * sizeof(float));
+        _fftComplex.imagp = (float *)malloc(_nOver2 * sizeof(float));
+        _fftWindow = (float *)malloc(_n * sizeof(float));
+        _fftMag = (float *)malloc(_nOver2 * sizeof(float));
+        
+        vDSP_hann_window(_fftWindow, _n, vDSP_HALF_WINDOW);
+    }
+    
+    float *channelData = buffer.floatChannelData[0];
+    std::vector<float> windowedData(_n);
+    vDSP_vmul(channelData, 1, _fftWindow, 1, windowedData.data(), 1, _n);
+    
+    vDSP_ctoz((DSPComplex *)windowedData.data(), 2, &_fftComplex, 1, _nOver2);
+    vDSP_fft_zrip(_fftSetup, &_fftComplex, 1, _log2n, FFT_FORWARD);
+    vDSP_zvmags(&_fftComplex, 1, _fftMag, 1, _nOver2);
+    
+    // Frequency bands (assuming ~44.1kHz rate => Nyquist 22kHz)
+    int bassEnd = (int)(0.011f * _nOver2);
+    int midsEnd = (int)(0.18f * _nOver2);
+    int highsEnd = (int)(0.90f * _nOver2);
+    
+    if (bassEnd < 1) bassEnd = 1;
+    if (midsEnd <= bassEnd) midsEnd = bassEnd + 1;
+    if (highsEnd <= midsEnd) highsEnd = midsEnd + 1;
+    
+    float bass = 0.0f;
+    for(int i = 1; i < bassEnd; i++) bass += _fftMag[i];
+    bass /= (float)(bassEnd - 1 + 1e-5f);
+    
+    float mids = 0.0f;
+    for(int i = bassEnd; i < midsEnd; i++) mids += _fftMag[i];
+    mids /= (float)(midsEnd - bassEnd + 1e-5f);
+    
+    float highs = 0.0f;
+    for(int i = midsEnd; i < highsEnd; i++) highs += _fftMag[i];
+    highs /= (float)(highsEnd - midsEnd + 1e-5f);
+    
+    // Scale and normalize (adjust multiplier if needed based on mic sensitivity)
+    bass = fminf(sqrtf(bass) * 0.20f, 1.0f);
+    mids = fminf(sqrtf(mids) * 0.20f, 1.0f);
+    highs = fminf(sqrtf(highs) * 0.20f, 1.0f);
+    
+    // Thread safety: basic atomic-like read/write of simd_float3
+    _audioBands = simd_make_float3(
+        _audioBands.x * 0.7f + bass * 0.3f,
+        _audioBands.y * 0.7f + mids * 0.3f,
+        _audioBands.z * 0.7f + highs * 0.3f
+    );
 }
 
 - (void)buildPipelineForView:(MTKView *)view {
@@ -328,8 +445,8 @@ struct SceneObject {
     particles[i].acceleration = {0, 0, 0};
     particles[i].mass = 1.0f;
     particles[i].alive = 1;
-    particles[i].padding[0] = 0;
-    particles[i].padding[1] = 0;
+    particles[i].trait = (float)i / (float)(_particleCount > 1 ? _particleCount - 1 : 1);
+    particles[i].padding = 0;
   }
 
   const NSUInteger l1Count = Engine::kInputSize * Engine::kHiddenSize;
@@ -341,6 +458,9 @@ struct SceneObject {
   // Hard-wire cursor→hidden sensitivity so particles respond from frame one.
   w1[0] = 1.0f;                           // input[0] (cursor x) → hidden[0]
   w1[1 * Engine::kHiddenSize + 1] = 1.0f; // input[1] (cursor y) → hidden[1]
+  w1[4 * Engine::kHiddenSize + 2] = 5.0f; // input[4] (bass) -> hidden[2]
+  w1[5 * Engine::kHiddenSize + 3] = 5.0f; // input[5] (mids) -> hidden[3]
+  w1[6 * Engine::kHiddenSize + 4] = 5.0f; // input[6] (highs) -> hidden[4]
 
   float *w2 = (float *)_weightBufferL2.contents;
   for (NSUInteger i = 0; i < l2Count; ++i)
@@ -348,6 +468,9 @@ struct SceneObject {
   // Hard-wire hidden→output so accel_x and accel_y are live from the start.
   w2[0] = 1.0f;                           // hidden[0] → accel_x
   w2[1 * Engine::kOutputSize + 1] = 1.0f; // hidden[1] → accel_y
+  w2[2 * Engine::kOutputSize + 0] = 5.0f; // hidden[2] -> accel_x (bass->x)
+  w2[3 * Engine::kOutputSize + 1] = 5.0f; // hidden[3] -> accel_y (mids->y)
+  w2[4 * Engine::kOutputSize + 0] = -5.0f; // hidden[4] -> accel_x (highs->x)
 
   Engine::Predator *predators = (Engine::Predator *)_predatorBuffer.contents;
   for (uint32_t i = 0; i < Engine::kPredatorCount; ++i) {
@@ -547,6 +670,9 @@ struct SceneObject {
   @autoreleasepool {
     const float dt = _clock.tick();
     _elapsedTime += dt;
+    
+    simd_float3 audioDelta = _audioBands - _previousAudioBands;
+    _previousAudioBands = _audioBands;
 
     // ---- FPS Counter ----
     _frameCount++;
@@ -606,6 +732,9 @@ struct SceneObject {
       [compEnc setBytes:&dtCopy length:sizeof(float) atIndex:3];
       uint32_t pCount = _particleCount;
       [compEnc setBytes:&pCount length:sizeof(uint32_t) atIndex:4];
+      [compEnc setBytes:&audioDelta length:sizeof(simd_float3) atIndex:5];
+      uint32_t enableCursor = _enableCursorAttraction ? 1 : 0;
+      [compEnc setBytes:&enableCursor length:sizeof(uint32_t) atIndex:6];
 
       NSUInteger threadgroupSize =
           _computePipelinePrepare.maxTotalThreadsPerThreadgroup;
@@ -658,6 +787,7 @@ struct SceneObject {
       [compEnc setBytes:&maxSpeed length:sizeof(float) atIndex:5];
       uint32_t pCount = _particleCount;
       [compEnc setBytes:&pCount length:sizeof(uint32_t) atIndex:6];
+      [compEnc setBytes:&_audioBands length:sizeof(simd_float3) atIndex:7];
 
       NSUInteger threadgroupSize =
           _computePipelinePhysics.maxTotalThreadsPerThreadgroup;
@@ -715,6 +845,7 @@ struct SceneObject {
     [enc setVertexBuffer:_particleBuffer offset:0 atIndex:0];
     [enc setVertexBytes:&mvp length:sizeof(mvp) atIndex:1];
     [enc setVertexBytes:&viewMat length:sizeof(viewMat) atIndex:2];
+    [enc setVertexBytes:&_audioBands length:sizeof(simd_float3) atIndex:3];
     [enc drawPrimitives:MTLPrimitiveTypePoint
             vertexStart:0
             vertexCount:_particleCount];
@@ -755,6 +886,9 @@ struct SceneObject {
     break;
   case kVK_ANSI_2:
     [self applyEvolutionStep:1.5f]; // subtle fine-tuning nudge
+    break;
+  case kVK_ANSI_C:
+    _enableCursorAttraction = !_enableCursorAttraction;
     break;
   }
 }

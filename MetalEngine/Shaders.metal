@@ -61,7 +61,8 @@ struct Particle {
     float3 acceleration;  // 16B
     float  mass;          //  4B
     uint   alive;         //  4B
-    uint   padding[2];    //  8B = 64B total
+    float  trait;         //  4B
+    uint   padding;       //  4B
 };
 
 struct Predator {
@@ -99,11 +100,13 @@ kernel void updatePredators(
 // These become the input tensor for the shared brain (MPSGraph inference).
 
 kernel void prepareFeatures(
-    const device Particle *particles    [[buffer(0)]],
-    device float4         *features     [[buffer(1)]],
-    constant float2       &cursorWorld  [[buffer(2)]],
-    constant float        &deltaTime   [[buffer(3)]],
+    const device Particle *particles     [[buffer(0)]],
+    device float          *features      [[buffer(1)]],
+    constant float2       &cursorWorld   [[buffer(2)]],
+    constant float        &deltaTime     [[buffer(3)]],
     constant uint         &particleCount [[buffer(4)]],
+    constant float3       &audioDelta    [[buffer(5)]],
+    constant uint         &enableCursor  [[buffer(6)]],
     uint gid [[thread_position_in_grid]])
 {
     if (gid >= particleCount) return;
@@ -111,13 +114,26 @@ kernel void prepareFeatures(
     Particle p = particles[gid];
 
     if (p.alive == 0) {
-        features[gid] = float4(0.0f);
+        for (int i = 0; i < 7; i++) {
+            features[gid * 7 + i] = 0.0f;
+        }
         return;
     }
 
-    float2 toCursor = cursorWorld - float2(p.position.x, p.position.y);
+    float2 toCursor = float2(0.0f);
+    if (enableCursor != 0) {
+        toCursor = cursorWorld - float2(p.position.x, p.position.y);
+    }
+    
     float  noise    = fract(sin(float(gid) * 12.9898f + deltaTime * 100.0f) * 43758.5453f);
-    features[gid]   = float4(toCursor.x, toCursor.y, noise, 1.0f);
+    
+    features[gid * 7 + 0] = toCursor.x;
+    features[gid * 7 + 1] = toCursor.y;
+    features[gid * 7 + 2] = noise;
+    features[gid * 7 + 3] = 1.0f;
+    features[gid * 7 + 4] = audioDelta.x; // Bass Delta
+    features[gid * 7 + 5] = audioDelta.y; // Mids Delta
+    features[gid * 7 + 6] = audioDelta.z; // Highs Delta
 }
 
 // ============================================================================
@@ -135,6 +151,7 @@ kernel void applyPhysics(
     constant float        &deltaTime     [[buffer(4)]],
     constant float        &maxSpeed      [[buffer(5)]],
     constant uint         &particleCount [[buffer(6)]],
+    constant float3       &audioData     [[buffer(7)]],
     uint gid [[thread_position_in_grid]])
 {
     if (gid >= particleCount) return;
@@ -146,7 +163,10 @@ kernel void applyPhysics(
     float3 vel = p.velocity;
 
     // ---- 1. Read neural network acceleration output ----
-    float2 aiAccel = aiAccelIn[gid];
+    float2 aiAccelRaw = aiAccelIn[gid];
+    
+    // Scale neural intent by trait (Extroverts act more on it)
+    float2 aiAccel = aiAccelRaw * mix(0.2f, 2.0f, p.trait);
 
     // ---- 2. Predator avoidance (rule-based override) ----
     for (uint i = 0; i < predatorCount; ++i) {
@@ -158,24 +178,39 @@ kernel void applyPhysics(
         }
     }
 
-    // ---- 3. Euler integration ----
     float3 accel = float3(aiAccel.x, aiAccel.y, 0.0f);
-    const float drag = 0.95f;
+    
+    // ---- Beat Kick (Sudden velocity impulse & dash) ----
+    float drag = 0.98f; // Viscous cooldown during quiet parts
+    if (audioData.x > 0.6f) {
+        drag = 0.90f;   // Less drag during loud parts for frantic movement
+        vel *= 1.2f;    // Velocity multiplier (momentary surge)
+        
+        // Random directional dash
+        float angle = fract(sin(float(gid) * 12.9898f + deltaTime * 100.0f) * 43758.5453f) * 6.2831853f;
+        accel += float3(cos(angle), sin(angle), 0.0f) * 20.0f; 
+    }
+
+    // ---- 3. Euler integration ----
     vel = vel * drag + accel * deltaTime;
 
-    // Clamp speed
+    // Clamp speed dynamically based on trait
+    float adjustedMaxSpeed = maxSpeed * mix(0.5f, 2.0f, smoothstep(0.3f, 0.7f, p.trait));
     float speed = length(vel);
-    if (speed > maxSpeed)
-        vel = normalize(vel) * maxSpeed;
+    if (speed > adjustedMaxSpeed)
+        vel = normalize(vel) * adjustedMaxSpeed;
 
     pos += vel * deltaTime;
 
-    // Soft boundary — nudge particles back toward center if they wander too far
+    // Hard Bounce boundary
     const float boundary = 20.0f;
-    if (length(float2(pos.x, pos.y)) > boundary) {
-        float2 toCenter = -normalize(float2(pos.x, pos.y));
-        vel.x += toCenter.x * deltaTime * 5.0f;
-        vel.y += toCenter.y * deltaTime * 5.0f;
+    if (abs(pos.x) > boundary) {
+        pos.x = boundary * sign(pos.x);
+        vel.x = -abs(vel.x) * sign(pos.x);
+    }
+    if (abs(pos.y) > boundary) {
+        pos.y = boundary * sign(pos.y);
+        vel.y = -abs(vel.y) * sign(pos.y);
     }
 
     // Write back
@@ -192,12 +227,15 @@ struct ParticleVertexOut {
     float4 position  [[position]];
     float4 color;
     float  pointSize [[point_size]];
+    float  pulseValue;
+    float  trait;
 };
 
 vertex ParticleVertexOut vs_particle(
     const device Particle *particles             [[buffer(0)]],
     constant float4x4     &modelViewProjection   [[buffer(1)]],
     constant float4x4     &view                  [[buffer(2)]],
+    constant float3       &audioData             [[buffer(3)]],
     uint vid [[vertex_id]])
 {
     ParticleVertexOut out;
@@ -205,24 +243,41 @@ vertex ParticleVertexOut vs_particle(
     float3 pos = p.position;
 
     if (p.alive == 0) {
-        out.position  = float4(0, 0, 0, 0);
-        out.pointSize = 0;
-        out.color     = float4(0);
+        out.position   = float4(0, 0, 0, 0);
+        out.pointSize  = 0;
+        out.color      = float4(0);
+        out.pulseValue = 0.0f;
+        out.trait      = 0.0f;
         return out;
     }
 
     out.position = modelViewProjection * float4(pos, 1.0);
+    out.trait = p.trait;
 
-    // DNA Color based on vertex ID
-    float hue = fract(float(vid) * 0.618033988749895);
-    // Convert hue to RGB using smooth function
-    float3 rgb = clamp(abs(fmod(hue * 6.0 + float3(0.0, 4.0, 2.0), 6.0) - 3.0) - 1.0, 0.0, 1.0);
+    // Trait-Based Color Interpolation
+    float3 introvertColor = mix(float3(0.0, 0.0, 0.8), float3(0.5, 0.0, 0.5), fract(float(vid) * 0.6180339887f));
+    float3 extrovertColor = mix(float3(1.0, 0.0, 0.5), float3(1.0, 1.0, 0.0), fract(float(vid) * 0.6180339887f));
+    float3 rgb = mix(introvertColor, extrovertColor, p.trait);
     out.color = float4(rgb, 1.0);
 
-    // Size shrinks with distance from camera
+    // Staggered DNA Rhythm
+    float pulse = 0.0f;
+    uint modId = vid % 3;
+    if (modId == 0) {
+        pulse = audioData.x; // Bass
+    } else if (modId == 1) {
+        pulse = audioData.y; // Mids
+    } else {
+        pulse = audioData.z; // Highs
+    }
+    
+    out.pulseValue = pulse;
+
+    // Size shrinks with distance from camera, pulses heavily based on the particle's frequency band and trait
+    float pulseScale = mix(0.2f, 5.0f, p.trait);
     float3 viewPos = (view * float4(pos, 1.0)).xyz;
     float  dist    = length(viewPos);
-    out.pointSize  = clamp(2500.0f / (dist + 1.0f), 30.0f, 120.0f);
+    out.pointSize  = clamp(2500.0f / (dist + 1.0f), 30.0f, 120.0f) * (1.0f + pulse * pulseScale);
 
     return out;
 }
@@ -235,9 +290,10 @@ fragment float4 fs_particle(ParticleVertexOut in [[stage_in]],
     float  r    = length(uv);
     if (r > 0.5) discard_fragment();
     
-    // Nucleus effect
+    // Nucleus effect pulses heavily based on the particle's specific frequency and trait
     if (r < 0.15) {
-        return float4(min(in.color.rgb * 1.5, 1.0), 1.0);
+        float nucleusIntensity = mix(1.0f, 6.0f, in.trait);
+        return float4(min(in.color.rgb * (1.5 + in.pulseValue * nucleusIntensity), 1.0), 1.0);
     }
 
     float  glow = smoothstep(0.5, 0.0, r);

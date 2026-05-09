@@ -26,6 +26,8 @@ find_library(QUARTZCORE_FRAMEWORK QuartzCore REQUIRED)
 find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
 find_library(MPS_FRAMEWORK        MetalPerformanceShaders      REQUIRED)
 find_library(MPSGRAPH_FRAMEWORK   MetalPerformanceShadersGraph REQUIRED)
+find_library(AVFOUNDATION_FRAMEWORK AVFoundation REQUIRED)
+find_library(ACCELERATE_FRAMEWORK   Accelerate   REQUIRED)
 
 add_executable(${PROJECT_NAME} MACOSX_BUNDLE
         MetalEngine/main.m
@@ -46,10 +48,13 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         ${FOUNDATION_FRAMEWORK}
         ${MPS_FRAMEWORK}
         ${MPSGRAPH_FRAMEWORK}
+        ${AVFOUNDATION_FRAMEWORK}
+        ${ACCELERATE_FRAMEWORK}
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
         MACOSX_BUNDLE TRUE
+        MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist
         OBJCXX_STANDARD 17
         CXX_STANDARD 17
         LINKER_LANGUAGE OBJCXX
