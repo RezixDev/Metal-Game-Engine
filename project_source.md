@@ -675,9 +675,9 @@ constexpr unsigned short kVK_ANSI_W = 0x0D;
 constexpr unsigned short kVK_ANSI_R = 0x0F;
 constexpr unsigned short kVK_Space  = 0x31;
 
-// Top-down 2D debug view — camera looks straight down at the ground plane.
+// 2D front-facing debug view — camera looks directly at the XY plane.
 // To restore 3D perspective: position={0,2,5}, target={0,0,0}, kLockCamera=false.
-constexpr Engine::Math::Vec3 kInitialPosition = {0.0f, 25.0f, 0.001f};
+constexpr Engine::Math::Vec3 kInitialPosition = {0.0f, 0.0f, 25.0f};
 constexpr Engine::Math::Vec3 kInitialTarget   = {0.0f, 0.0f,  0.0f};
 constexpr bool kLockCamera = true; // disable WASD + mouse-look for 2D debug
 
@@ -869,8 +869,8 @@ struct SceneObject {
         for (NSUInteger i = 0; i < _particleCount; ++i) {
             particles[i].position = {
                 (rand() / (float)RAND_MAX - 0.5f) * 20.0f,
-                0.0f,
-                (rand() / (float)RAND_MAX - 0.5f) * 20.0f
+                (rand() / (float)RAND_MAX - 0.5f) * 20.0f,
+                0.0f
             };
             particles[i].velocity     = {0, 0, 0};
             particles[i].acceleration = {0, 0, 0};
@@ -926,7 +926,7 @@ struct SceneObject {
         std::vector<Engine::Predator> predators(Engine::kPredatorCount);
         for (uint32_t i = 0; i < Engine::kPredatorCount; ++i) {
             float angle = (float)i * 1.2566f;
-            predators[i].position = {cosf(angle) * 8.0f, 0.0f, sinf(angle) * 8.0f};
+            predators[i].position = {cosf(angle) * 8.0f, sinf(angle) * 8.0f, 0.0f};
             predators[i].radius   = 2.5f;
         }
         _predatorBuffer = [_device newBufferWithBytes:predators.data()
@@ -999,12 +999,12 @@ struct SceneObject {
     simd_float4 rayEnd = simd_mul(invVP, rayEndNDC);
     rayEnd /= rayEnd.w;
 
-    // Intersect with the y=0 ground plane
+    // Intersect with the z=0 plane
     simd_float3 dir = simd_normalize(rayEnd.xyz - rayStart.xyz);
-    if (fabs(dir.y) < 1e-4f) return simd_make_float2(0, 0);
-    float t = -rayStart.y / dir.y;
+    if (fabs(dir.z) < 1e-4f) return simd_make_float2(0, 0);
+    float t = -rayStart.z / dir.z;
     simd_float3 hit = rayStart.xyz + dir * t;
-    return simd_make_float2(hit.x, hit.z);
+    return simd_make_float2(hit.x, hit.y);
 }
 
 - (void)setCursorScreenPosition:(CGPoint)pt viewSize:(CGSize)viewSize {
@@ -1405,8 +1405,8 @@ kernel void updatePredators(
     float angle  = time * 0.5f + float(idx) * 1.2566f; // golden-ish spacing
     float radius = 8.0f + float(idx) * 2.0f;
     predators[idx].position = float3(cos(angle) * radius,
-                                      0.0f,
-                                      sin(angle) * radius);
+                                      sin(angle) * radius,
+                                      0.0f);
     predators[idx].radius = 2.5f;
 }
 
@@ -1431,8 +1431,8 @@ kernel void updateParticles(
     float3 vel = p.velocity;
 
     // ---- 1. Build neural network input ----
-    // [ distance-to-cursor-x, distance-to-cursor-z, noise, 1.0 (bias term) ]
-    float2 toCursor = cursorWorld - float2(pos.x, pos.z);
+    // [ distance-to-cursor-x, distance-to-cursor-y, noise, 1.0 (bias term) ]
+    float2 toCursor = cursorWorld - float2(pos.x, pos.y);
     float  noise    = fract(sin(float(gid) * 12.9898f + deltaTime * 100.0f) * 43758.5453f);
     float4 input    = float4(toCursor.x, toCursor.y, noise, 1.0f);
 
@@ -1454,12 +1454,12 @@ kernel void updateParticles(
         float  rad  = predators[i].radius;
         if (dist < rad && dist > 0.0001f) {
             // Strong repulsion that scales with proximity
-            aiAccel += float2(diff.x, diff.z) * (rad - dist) * 2.0f;
+            aiAccel += float2(diff.x, diff.y) * (rad - dist) * 2.0f;
         }
     }
 
     // ---- 4. Euler integration ----
-    float3 accel = float3(aiAccel.x, 0.0f, aiAccel.y);
+    float3 accel = float3(aiAccel.x, aiAccel.y, 0.0f);
     const float drag = 0.98f;
     vel = vel * drag + accel * deltaTime;
 
@@ -1472,10 +1472,10 @@ kernel void updateParticles(
 
     // Soft boundary — nudge particles back toward center if they wander too far
     const float boundary = 15.0f;
-    if (length(float2(pos.x, pos.z)) > boundary) {
-        float2 toCenter = -normalize(float2(pos.x, pos.z));
+    if (length(float2(pos.x, pos.y)) > boundary) {
+        float2 toCenter = -normalize(float2(pos.x, pos.y));
         vel.x += toCenter.x * deltaTime * 5.0f;
-        vel.z += toCenter.y * deltaTime * 5.0f;
+        vel.y += toCenter.y * deltaTime * 5.0f;
     }
 
     // Write back

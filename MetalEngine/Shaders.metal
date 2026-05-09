@@ -70,16 +70,6 @@ struct Predator {
     float  pad[3];    // 12 bytes padding to match CPU sizeof(Predator) = 32
 };
 
-// Tiny neural network per particle.
-// Network: 4 inputs → 4 hidden (ReLU) → 2 outputs (accel x,z).
-// Both layers use float4x4 for alignment; output layer uses only .xy.
-struct Brain {
-    float4x4 w1;   // hidden layer weights
-    float4   b1;   // hidden layer bias
-    float4x4 w2;   // output layer weights
-    float4   b2;   // output layer bias
-};
-
 // ============================================================================
 // Compute Kernel: Update Predators
 // ============================================================================
@@ -102,54 +92,73 @@ kernel void updatePredators(
 }
 
 // ============================================================================
-// Compute Kernel: Update Particles (Neural Network + Physics)
+// Compute Kernel: Prepare Features for MPSGraph Neural Network
 // ============================================================================
+//
+// Writes one float4 per particle: [cursor_dx, cursor_dy, noise, bias]
+// These become the input tensor for the shared brain (MPSGraph inference).
 
-kernel void updateParticles(
-    device Particle     *particles    [[buffer(0)]],
-    device Brain        *brains       [[buffer(1)]],
-    constant Predator   *predators    [[buffer(2)]],
-    constant uint       &predatorCount[[buffer(3)]],
-    constant float2     &cursorWorld  [[buffer(4)]],
-    constant float      &deltaTime   [[buffer(5)]],
-    constant float      &maxSpeed    [[buffer(6)]],
+kernel void prepareFeatures(
+    const device Particle *particles    [[buffer(0)]],
+    device float4         *features     [[buffer(1)]],
+    constant float2       &cursorWorld  [[buffer(2)]],
+    constant float        &deltaTime   [[buffer(3)]],
+    constant uint         &particleCount [[buffer(4)]],
     uint gid [[thread_position_in_grid]])
 {
+    if (gid >= particleCount) return;
+
+    Particle p = particles[gid];
+
+    if (p.alive == 0) {
+        features[gid] = float4(0.0f);
+        return;
+    }
+
+    float2 toCursor = cursorWorld - float2(p.position.x, p.position.y);
+    float  noise    = fract(sin(float(gid) * 12.9898f + deltaTime * 100.0f) * 43758.5453f);
+    features[gid]   = float4(toCursor.x, toCursor.y, noise, 1.0f);
+}
+
+// ============================================================================
+// Compute Kernel: Apply Physics (reads MPSGraph output + predator avoidance)
+// ============================================================================
+//
+// Reads the [N, 2] acceleration output from the neural network and applies
+// predator avoidance, drag, speed clamping, boundary forces, and integration.
+
+kernel void applyPhysics(
+    device Particle       *particles     [[buffer(0)]],
+    const device float2   *aiAccelIn     [[buffer(1)]],
+    constant Predator     *predators     [[buffer(2)]],
+    constant uint         &predatorCount [[buffer(3)]],
+    constant float        &deltaTime     [[buffer(4)]],
+    constant float        &maxSpeed      [[buffer(5)]],
+    constant uint         &particleCount [[buffer(6)]],
+    uint gid [[thread_position_in_grid]])
+{
+    if (gid >= particleCount) return;
+
     Particle p = particles[gid];
     if (p.alive == 0) return;
 
     float3 pos = p.position;
     float3 vel = p.velocity;
 
-    // ---- 1. Build neural network input ----
-    // [ distance-to-cursor-x, distance-to-cursor-y, noise, 1.0 (bias term) ]
-    float2 toCursor = cursorWorld - float2(pos.x, pos.y);
-    float  noise    = fract(sin(float(gid) * 12.9898f + deltaTime * 100.0f) * 43758.5453f);
-    float4 input    = float4(toCursor.x, toCursor.y, noise, 1.0f);
+    // ---- 1. Read neural network acceleration output ----
+    float2 aiAccel = aiAccelIn[gid];
 
-    // ---- 2. Forward pass through tiny neural network ----
-    Brain b = brains[gid];
-
-    // Hidden layer: h = ReLU(w1 * input + b1)
-    float4 hidden = b.w1 * input + b.b1;
-    hidden = max(hidden, float4(0.0));
-
-    // Output layer: out = (w2 * hidden + b2).xy → 2D acceleration
-    float4 raw_out = b.w2 * hidden + b.b2;
-    float2 aiAccel = raw_out.xy;
-
-    // ---- 3. Predator avoidance (rule-based override) ----
+    // ---- 2. Predator avoidance (rule-based override) ----
     for (uint i = 0; i < predatorCount; ++i) {
         float3 diff = pos - float3(predators[i].position);
         float  dist = length(diff);
         float  rad  = predators[i].radius;
         if (dist < rad && dist > 0.0001f) {
-            // Strong repulsion that scales with proximity
             aiAccel += float2(diff.x, diff.y) * (rad - dist) * 2.0f;
         }
     }
 
-    // ---- 4. Euler integration ----
+    // ---- 3. Euler integration ----
     float3 accel = float3(aiAccel.x, aiAccel.y, 0.0f);
     const float drag = 0.98f;
     vel = vel * drag + accel * deltaTime;

@@ -24,6 +24,8 @@ find_library(METAL_FRAMEWORK      Metal      REQUIRED)
 find_library(METALKIT_FRAMEWORK   MetalKit   REQUIRED)
 find_library(QUARTZCORE_FRAMEWORK QuartzCore REQUIRED)
 find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
+find_library(MPS_FRAMEWORK        MetalPerformanceShaders      REQUIRED)
+find_library(MPSGRAPH_FRAMEWORK   MetalPerformanceShadersGraph REQUIRED)
 
 add_executable(${PROJECT_NAME} MACOSX_BUNDLE
         MetalEngine/main.m
@@ -42,6 +44,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         ${METALKIT_FRAMEWORK}
         ${QUARTZCORE_FRAMEWORK}
         ${FOUNDATION_FRAMEWORK}
+        ${MPS_FRAMEWORK}
+        ${MPSGRAPH_FRAMEWORK}
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES

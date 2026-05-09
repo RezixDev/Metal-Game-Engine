@@ -9,7 +9,7 @@
 namespace Engine {
 
 // One particle's persistent state — position, velocity, and alive flag.
-// 64 bytes, matching the GPU packed layout.
+// 64 bytes, matching the GPU float3 layout (simd_float3 = 16 bytes on Apple).
 struct Particle {
     simd_float3 position;      // 16B (simd-aligned)
     simd_float3 velocity;      // 16B
@@ -20,18 +20,6 @@ struct Particle {
 };
 static_assert(sizeof(Particle) == 64, "Particle must be 64 bytes");
 
-// A tiny neural network for each particle.
-// Network: 4 inputs → 4 hidden (ReLU) → 2 outputs (acceleration x, z).
-// We use float4x4 for both layers (output layer wastes 2 rows but keeps
-// alignment simple and lets us use a single matrix multiply).
-struct Brain {
-    matrix_float4x4 w1;   // 64B — hidden layer weights
-    simd_float4     b1;   // 16B — hidden layer bias
-    matrix_float4x4 w2;   // 64B — output layer weights (only .xy used)
-    simd_float4     b2;   // 16B — output layer bias   (only .xy used)
-};
-static_assert(sizeof(Brain) == 160, "Brain must be 160 bytes");
-
 // Predator — orbits the origin and scares nearby particles.
 struct Predator {
     simd_float3 position;  // 12B + 4B padding (simd alignment)
@@ -39,8 +27,14 @@ struct Predator {
 };
 static_assert(sizeof(Predator) == 32, "Predator must be 32 bytes");
 
+// NOTE: Brain struct removed — neural network weights now live in MPSGraph
+// as shared tensors (all particles use the same brain, mutated in real-time).
+
 // Constants
 constexpr uint32_t kParticleCount = 500000;
 constexpr uint32_t kPredatorCount = 5;
+constexpr uint32_t kInputSize     = 4;   // [cursor_dx, cursor_dy, noise, bias]
+constexpr uint32_t kHiddenSize    = 16;  // wider hidden layer for shared brain
+constexpr uint32_t kOutputSize    = 2;   // [accel_x, accel_y]
 
 } // namespace Engine
